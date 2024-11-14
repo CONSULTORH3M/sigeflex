@@ -1,26 +1,37 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog  # Importação corrigida do simpledialog
+# GERAR O BANCO
 import sqlite3
 
-# Função para inicializar o banco de dados e criar a tabela se não existir
 def inicializar_tabela():
-    conexao = sqlite3.connect('clientes.db')
-    c = conexao.cursor()
-    c.execute(''' 
-        CREATE TABLE IF NOT EXISTS clientes (
-            id_recibo INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT,
-            cnpj TEXT,
-            valor REAL,
-            telefone TEXT,
-            formaPag TEXT,
-            dataEmissao TEXT,
-            referente TEXT,
-            observacao TEXT
-        )
-    ''')
-    conexao.commit()
-    conexao.close()
+    try:
+        # Abre a conexão com o banco de dados
+        with sqlite3.connect('dado.db') as conexao:
+            c = conexao.cursor()
+            # Cria a tabela caso ela não exista
+            c.execute('''
+                CREATE TABLE IF NOT EXISTS dados (
+                    id_recibo INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nome TEXT,
+                    cnpj TEXT,
+                    valor REAL,
+                    telefone TEXT,
+                    formaPag TEXT,
+                    dataEmissao TEXT,
+                    referente TEXT,
+                    observacao TEXT
+                )
+            ''')
+            # Commit não é necessário quando se usa o "with", pois o commit é feito automaticamente.
+            # conexao.commit()  # Não é necessário se estiver usando "with"
+    except sqlite3.Error as e:
+        print(f"Erro ao inicializar a tabela: {e}")
+    else:
+        print("Tabela criada ou já existe.")
+
+# Chama a função para inicializar a tabela
+inicializar_tabela()
+
 
 # Função para buscar clientes na base de dados
 def buscar_cliente():
