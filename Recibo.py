@@ -761,17 +761,17 @@ def gerar_Rel_Total():
 ###################################################################################################################
 ###################################################################################################################
 ############################################# MODELO NORMAL RESUMIDO - AVULSO - SIMPLES
- 
+import os
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-import sqlite3
 from tkinter import messagebox
-import os
+import sqlite3
+from datetime import datetime
 
-def gerar_pdf(): # SELECIONA O ID_RECIBO E GERA UMA IMPRESSAO SIMPLES, 1 VIA APENAS
+def gerar_pdf():
     try:  
-        item_selecionado = tree.selection()[0]
-        id_recibo = tree.item(item_selecionado)['values'][0]
+        item_selecionado = tree.selection()[0]  # Obtém o item selecionado na árvore
+        id_recibo = tree.item(item_selecionado)['values'][0]  # Pegando o ID do recibo
 
         # Conectando ao banco de dados para pegar os dados do recibo
         conexao = sqlite3.connect('dados.db')
@@ -781,8 +781,16 @@ def gerar_pdf(): # SELECIONA O ID_RECIBO E GERA UMA IMPRESSAO SIMPLES, 1 VIA APE
         conexao.close()
 
         if dados:
-            # Criando o arquivo PDF com o nome do recibo
+            # Nome do arquivo PDF
             caminho_pdf = f"recibo_{id_recibo}.pdf"
+            
+            # Verificar se o arquivo já está aberto
+            if verificar_arquivo_em_uso(caminho_pdf):
+                # Se o arquivo estiver aberto, exibe uma mensagem e não tenta gerar o PDF
+                messagebox.showerror("Erro", "O arquivo PDF já está aberto. Feche o documento para gerar novamente.")
+                return
+
+            # Criando o arquivo PDF com o nome do recibo
             c = canvas.Canvas(caminho_pdf, pagesize=letter)
             c.setFont("Helvetica", 12)
 
@@ -808,14 +816,13 @@ def gerar_pdf(): # SELECIONA O ID_RECIBO E GERA UMA IMPRESSAO SIMPLES, 1 VIA APE
             c.drawString(100, 525, "PORTO XAVIER - RS IMOBILAIRA LIDER")
             c.drawString(100, 495, "ASS ---------------------------------------")
             c.drawString(100, 475, f"Data Emissao: {dados[7]}")
-            # Mensagem de agradecimento (opcional)
-            c.setFont("Helvetica-Bold", 10)
-                       
+            
+            
 
             # Salvar o PDF
             c.save()
 
-            os.startfile(caminho_pdf)  # CHAMA ao arquivo para o código e abre ele na tela
+            os.startfile(caminho_pdf)  # Abre o arquivo PDF gerado
             # Mensagem de sucesso
             messagebox.showinfo("Sucesso", f"Recibo_Avulso_{id_recibo} Gerado com Sucesso!")
         
@@ -824,6 +831,16 @@ def gerar_pdf(): # SELECIONA O ID_RECIBO E GERA UMA IMPRESSAO SIMPLES, 1 VIA APE
 
     except IndexError:
         messagebox.showwarning("Atenção", "Selecione um Recibo na GRID para Gerar o PDF.")
+
+def verificar_arquivo_em_uso(caminho_pdf):
+    """Verifica se o arquivo está sendo usado por outro processo (se está aberto)"""
+    try:
+        # Tenta abrir o arquivo no modo exclusivo. Se o arquivo estiver aberto, o Python irá falhar.
+        with open(caminho_pdf, "r+b"):
+            return False  # Arquivo não está em uso
+    except IOError:
+        return True  # Arquivo está em uso (aberto por outro processo)
+
 
 ###########################################################################################################################################
 ###########################################################################################################################################        
@@ -1540,7 +1557,102 @@ def chamar_tela_insercao():
     btn_fechar.grid(row=len(labels), column=0, padx=10, pady=10, sticky="ew")  # Coloca o botão na próxima coluna, lado a lado
 
     root.mainloop()
+
+
 ###########################################################################################################################################
+# FUNCAO COM BOTAO DIREITO DO MOUSE QUE GERA O RECIBO RÁPIDO - COM IMPRESSAO DA DATA DO DIA SEMPRE - NA HORA
+###########################################################################################################################################
+import tkinter as tk
+from tkinter import ttk, Menu, messagebox
+import sqlite3
+import os
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+
+# Função para gerar PDF
+def gerar_mes():
+    try:  
+        item_selecionado = tree.selection()[0]  # Obtém o item selecionado na árvore
+        id_recibo = tree.item(item_selecionado)['values'][0]  # Pegando o ID do recibo
+
+        # Conectando ao banco de dados para pegar os dados do recibo
+        conexao = sqlite3.connect('dados.db')
+        c = conexao.cursor()
+        c.execute("SELECT * FROM dados WHERE id_recibo=?", (id_recibo,))
+        dados = c.fetchone()
+        conexao.close()
+
+        if dados:
+            # Criando o arquivo PDF com o nome do recibo
+            caminho_pdf = f"recibo_{id_recibo}.pdf"
+            c = canvas.Canvas(caminho_pdf, pagesize=letter)
+            c.setFont("Helvetica", 12)
+
+            # Inserindo o logo no topo (ajuste o caminho do arquivo de imagem)
+            logo_path = "logo.png"  # Caminho para o arquivo de imagem do logo
+            c.drawImage(logo_path, 100, 740, width=100, height=50)  # Ajuste o tamanho e posição conforme necessário
+
+            # Título do Recibo
+            c.setFont("Helvetica-Bold", 16)
+            c.drawString(210, 760, f"Recibo Avulso N°: {dados[0]}")
+            
+            # Adicionando informações do recibo
+            c.setFont("Helvetica", 12)
+            c.drawString(100, 725, f"Nome: {dados[1]}")
+            c.drawString(100, 705, f"CPF/CNPJ: {dados[2]}")
+            c.drawString(100, 685, f"Endereco: {dados[3]}")
+            c.drawString(100, 665, f"Valor Pago: R$ {dados[5]:.2f}")
+            c.drawString(100, 645, f"Aluguel: R$ {dados[4]:.2f}")
+            c.drawString(100, 625, f"Descontos: {dados[15]}")
+            c.drawString(100, 605, f"Referente: {dados[6]}")
+            c.drawString(100, 585, f"Observacao: {dados[16]}")
+            c.drawString(100, 555, f"Tipo: RECEBEMOS( )     PAGAMOS( )")
+            c.drawString(100, 525, "PORTO XAVIER - RS IMOBILAIRA LIDER")
+            c.drawString(100, 495, "ASS ---------------------------------------")
+
+            # Obtendo a data atual
+            data_atual = datetime.now().strftime("%d/%m/%Y")  # Formato: DD/MM/YYYY
+            c.drawString(100, 475, f"Data Emissao: {data_atual}")  # Substituindo pela data atual
+
+            #c.drawString(100, 475, f"Data Emissao: {dados[7]}")
+
+            # Salvar o PDF
+            c.save()
+
+            os.startfile(caminho_pdf)  # Abre o arquivo PDF gerado
+            # Mensagem de sucesso
+            messagebox.showinfo("Sucesso", f"Recibo_Avulso_{id_recibo} Gerado com Sucesso!")
+        
+        else:
+            messagebox.showerror("Erro", "Recibo Não Encontrado.")
+
+    except IndexError:
+        messagebox.showwarning("Atenção", "Selecione um Recibo na GRID para Gerar o PDF.")
+
+# Função chamada para fechar o menu
+def fechar_menu():
+    menu_post_click.unpost()  # Fecha o menu de contexto
+
+# Função chamada quando o botão direito do mouse é pressionado
+def on_right_click(event):
+    try:
+        item_selecionado = tree.selection()[0]  # Obtém o item selecionado na árvore
+        
+        # Exibir o menu de contexto
+        menu_post_click.post(event.x_root, event.y_root)
+    
+    except IndexError:
+        messagebox.showwarning("Atenção", "Selecione um item na GRID para gerar o PDF.")
+
+# Função que gera o PDF e fecha o menu de contexto
+def gerar_e_fechar():
+    gerar_mes()  # Chama a função para gerar o PDF
+    menu_post_click.unpost()  # Fecha o menu de contexto
+
+
+
+
+######################################################################################################################
 ############################################################################################################################################
 # INTERFACE GRAFICA DA JANELA PRINCIPAL DO SISTEMA, PRIMEIRA JANELA QUE ABRE - AONDE ESTA TODOS OS BOTOES E FUNÇOES PRINCIPAIS
 # Tela principal
@@ -1616,6 +1728,12 @@ btn_avulso.grid(row=4, column=1, padx=10, pady=10)
 cols = ("ID_RECIBO", "Nome", "CPF/CNPJ","Endereco", "ALUGUEL", "VALOR PAGO", "Referente", "Data de Emissão", "Agua", "Luz", "Condominio", "IPTU", "Internet", "Limpeza", "Outros", "Descontos","OBS")
 tree = ttk.Treeview(janela_principal, columns=cols, show="headings")
 
+# CRIANDO O BOTAO DIREITO DO MOUSE
+###################################################################################
+# Supondo que tree seja sua árvore já existente
+tree.bind("<Button-3>", on_right_click)  # Associando o clique direito
+######################################################################################
+
 # Definindo larguras personalizadas para cada coluna
 larguras = [30, 150, 100, 150, 70, 80, 150, 80, 50, 50, 50, 50, 50, 50, 50, 50, 100]
 
@@ -1636,4 +1754,11 @@ janela_principal.grid_rowconfigure(1, weight=1)
 janela_principal.grid_columnconfigure(0, weight=1)
 janela_principal.grid_columnconfigure(1, weight=1)
 
+# Criando a JANELINHA ao cliclar com o BOTAO DIREITO MOUSE
+menu_post_click = Menu(janela_principal, tearoff=0)
+menu_post_click.add_command(label="GERAR RECIBO MES", command=gerar_e_fechar)
+menu_post_click.add_separator()  # Adiciona uma linha de separação
+menu_post_click.add_command(label="Fechar", command=fechar_menu)
+
+# CHAMAR JANELA PRINCIPAL - FINAL CODIGO
 janela_principal.mainloop()
