@@ -96,9 +96,9 @@ def verificar_login():
                     janela_login.destroy()  # Fechar a janela de login
                     janela_boas_vindas()  # Abrir a janela de boas-vindas
                 else:
-                    messagebox.showerror("Erro", "Senha incorreta. Tente novamente.")
+                    messagebox.showerror("Erro", "Senha Incorreta. Tente Novamente.")
             else:
-                messagebox.showerror("Erro", "Usuário não encontrado.")
+                messagebox.showerror("Erro", "Usuário Não Encontrado.")
         except Error as e:
             print(f"Erro ao consultar o banco de dados: {e}")
         finally:
@@ -122,22 +122,6 @@ def carregar_ultimo_usuario():
     except FileNotFoundError:
         return None  # Se o arquivo não existir, retorna None
 
-# Função para janela de boas-vindas
-def janela_boas_vindas():
-    janela_boas = ctk.CTk()
-    janela_boas.title("Bem Vindo A GDI!")
-    janela_boas.geometry("690x200")
-    janela_boas.resizable(False, False)
-
-    ctk.CTkLabel(janela_boas, text="Seja Bem-Vindo ao Sistema GDI!", font=("Arial", 16)).pack(pady=10)
-    ctk.CTkLabel(janela_boas, text="***Versão 2024.1***", font=("Arial", 12)).pack(pady=5)
-    ctk.CTkLabel(janela_boas, text="DÚVIDAS: (54) 9 9104-1029", font=("Arial", 16)).pack(pady=10)
-    
-    btn_continuar = ctk.CTkButton(janela_boas, text="Continuar -Enter", command=lambda: [janela_boas.destroy()])
-    btn_continuar.pack(pady=20)
-    janela_boas.bind("<Return>", lambda event: btn_continuar.invoke())  # Chama a função associada ao botão
-
-    janela_boas.mainloop()
 
 # Função para encerrar o programa
 def on_close():
@@ -146,7 +130,7 @@ def on_close():
 # Janela de login
 janela_login = ctk.CTk()
 janela_login.title("Login")
-janela_login.geometry("300x250")  # Aumentei a altura para caber a lista de usuários
+janela_login.geometry("300x180")  # Aumentei a altura para caber a lista de usuários
 janela_login.resizable(False, False)
 
 # Definindo o comportamento de fechamento
@@ -191,26 +175,9 @@ criar_tabela_usuarios()
 
 # Inicia a interface gráfica da janela de login
 janela_login.mainloop()
-
+######################################### LOGIN ACIMA
 ####################################################################################################################################################
-# CRIANDO A INTERFACE PRINCIPAL#########
-import tkinter as tk
-from tkinter import simpledialog, messagebox
-from datetime import datetime
-
-# Função de Conexão com MySQL
-def conectar_mysql():
-    return mysql.connector.connect(
-        host="localhost",  # Endereço do servidor MySQL
-        user="root",       # Usuário MySQL
-        password="mysql147",  # Senha MySQL
-        database="dados"  # Nome do banco de dados
-    )
-
-# Funções para exclusão, busca, inclusão e geração de relatórios
-
-# Continuando a interface da janela principal com a utilização de widgets e ações
-
+#  TELA DE PROCURAR DOS RECIBOS NA TELA PRINCIPAL E MOSTRAR NA TELA
 ####################################################################################################################################################
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
@@ -218,15 +185,7 @@ import mysql.connector
 from datetime import datetime
 
 # Função de Conexão com MySQL
-def conectar_mysql():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="mysql147",
-        database="dados"
-    )
-
-def buscar_cliente(event=None):
+def buscar_recibos(event=None):
     # Limpar a árvore de resultados anteriores
     for item in tree.get_children():
         tree.delete(item)
@@ -237,15 +196,22 @@ def buscar_cliente(event=None):
 
     # Obter os valores de busca
     nome_busca = campo_busca_nome.get()
-    #id_busca = campo_busca_recibo.get()
+    id_busca = campo_busca_recibo.get()
 
     # Verifica se há algum critério de busca
-    if nome_busca:
-        c.execute("SELECT * FROM pessoas WHERE nome LIKE %s", ('%' + nome_busca + '%',))  # Buscar por Nome do Cliente
+    if nome_busca and id_busca:
+        # Buscar por nome e id
+        c.execute("SELECT * FROM recibos WHERE nome LIKE %s AND id_recibo LIKE %s", 
+                  ('%' + nome_busca + '%', '%' + id_busca + '%'))
     elif nome_busca:
-        c.execute("SELECT * FROM pessoas WHERE id LIKE = %s", ('%' + nome_busca + '%',))  # Buscar pelo Número CLIENTE
-      
-        c.execute("SELECT * FROM pessoas DESC")  # Caso não tenha critério, retorna todos os dados
+        # Buscar apenas por nome
+        c.execute("SELECT * FROM recibos WHERE nome LIKE %s", ('%' + nome_busca + '%',))
+    elif id_busca:
+        # Buscar apenas por id
+        c.execute("SELECT * FROM recibos WHERE id_recibo LIKE %s", ('%' + id_busca + '%',))
+    else:
+        # Se não houver nenhum critério de busca, retornar todos os dados
+        c.execute("SELECT * FROM recibos ORDER BY id_recibo DESC")
 
     dados = c.fetchall()  # Recupera todos os dados da consulta
     conexao.close()  # Fecha a conexão com o banco
@@ -259,27 +225,129 @@ def buscar_cliente(event=None):
         tree.insert('', 'end', values=dado)  # Adiciona cada linha de dados na árvore
 
 
-# Função de exclusão
-def excluir_recibo():
-    pass  # Aqui vai a lógica da sua função excluir_recibo
 
-# Função de inclusão
-import mysql.connector
-from tkinter import messagebox
+###################################################################################################################
+##############################################FUNCAO DE EXCLUIR RECIBO ABAIXO
+#######################################################################################################################
 import tkinter as tk
+from tkinter import messagebox, simpledialog
+import mysql.connector
+def excluir_cliente(janela_consulta, tree):
+    try:
+        # Obter o item selecionado (linha do Treeview)
+        selected_item = tree.selection()  # Retorna a linha selecionada
+        
+        if not selected_item:
+            messagebox.showwarning("Atenção", "Selecione um cliente para excluir!")
+            return
+        
+        # Obter o ID_CLIENTE da linha selecionada
+        id_cliente = tree.item(selected_item, 'values')[0]  # O ID_CLIENTE está na primeira coluna
+        
+        # Criar uma nova janela para a senha
+        senha_janela = tk.Toplevel(janela_consulta)  # Cria uma janela secundária dentro de janela_consulta
+        senha_janela.title("Confirmar Exclusão")
+        
+        # Impede que a janela principal fique à frente
+        janela_principal.attributes("-topmost", False)  # Desabilita o comportamento de "sempre à frente" para a janela principal
+        
+        # Garantir que a janela de senha fique em primeiro plano
+        senha_janela.lift()  # Coloca a janela de senha acima da janela de consulta
+        senha_janela.focus_force()  # Garante que a janela de senha receba o foco
+        senha_janela.grab_set()  # Captura o foco e bloqueia as outras janelas até a interação terminar
+        
+        # Adicionando um rótulo (Label) e campo de entrada (Entry) para a senha
+        tk.Label(senha_janela, text="Digite a senha para excluir o cliente:").pack(padx=10, pady=10)
+        
+        senha_entry = tk.Entry(senha_janela, show="*")  # O parâmetro 'show' oculta a senha
+        senha_entry.pack(padx=10, pady=5)
+        
+        def verificar_senha():
+            senha = senha_entry.get()  # Pega a senha digitada
+            
+            if senha != "55":  # Definindo a senha de confirmação como '55' (modifique conforme necessário)
+                messagebox.showerror("Erro", "Senha incorreta! Exclusão cancelada.")
+                senha_janela.destroy()  # Fecha a janela da senha
+                return
+            
+            # Confirmar com o usuário antes de excluir
+            confirm = messagebox.askyesno("Confirmar Exclusão", f"Você tem certeza que deseja excluir o cliente com ID {id_cliente}?")
+            
+            if confirm:
+                try:
+                    # Conectando ao banco de dados MySQL
+                    conn = mysql.connector.connect(
+                        host="localhost", user="root", password="mysql147", database="Dados"
+                    )
+                    cursor = conn.cursor()
+                    
+                    # Query para deletar o cliente com base no ID
+                    query = "DELETE FROM pessoas WHERE ID_CLIENTE = %s"
+                    cursor.execute(query, (id_cliente,))
+                    conn.commit()  # Salvar a exclusão no banco
+                    
+                    # Fechar conexão
+                    cursor.close()
+                    conn.close()
+                    
+                    # Remover o item da interface (Treeview)
+                    tree.delete(selected_item)
+                    
+                    # Exibir mensagem de sucesso
+                    messagebox.showinfo("Sucesso", "Cliente excluído com sucesso!")
+                    
+                    # Aqui, trazemos a janela_consulta de volta para frente após a exclusão
+                    janela_consulta.lift()  # Traz a janela de consulta para frente
+                    janela_consulta.focus_force()  # Coloca o foco na janela de consulta
+
+                except mysql.connector.Error as err:
+                    messagebox.showerror("Erro", f"Erro ao excluir cliente: {err}")
+            
+            senha_janela.destroy()  # Fecha a janela de senha após o processo de exclusão
+
+        # Adicionando o botão para verificar a senha
+        tk.Button(senha_janela, text="Confirmar", command=verificar_senha).pack(padx=10, pady=10)
+        
+        # Exibir a janela de senha
+        senha_janela.mainloop()
+
+        # Garantir que a janela de consulta fique na frente após o fechamento da janela de confirmação de exclusão
+        janela_consulta.lift()  # Traz a janela de consulta para frente
+        janela_consulta.focus_force()  # Coloca o foco na janela de consulta
+
+    except Exception as e:
+        messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
+    
+    finally:
+        # Certificar que a janela principal não ficará à frente das outras
+        janela_principal.attributes("-topmost", True)  # Restabelece o comportamento de "sempre à frente" para a janela principal
+
+
+
+#################################################################### ACIMA FUNÇAO EXCLUIR RECIBO###########
+##########################################################################################################
+
+######################################################################INCLUIR NOVO RECIBO ABAIXO##################
+# Função de inclusão - INCLUIR NOVO RECIBO
+import tkinter as tk
+from tkinter import messagebox
+import mysql.connector
 from datetime import datetime
 
 def abrir_janela_inclusao():
     # Criando a janela de inclusão
     janela_inclusao = tk.Toplevel(janela_principal)
-    janela_inclusao.title("Incluindo Novo Recibo")
-    janela_inclusao.geometry("500x550")  # Ajuste no tamanho da janela para permitir mais espaço
+    janela_inclusao.title("Incluindo Novo Recibo MANUAL")
+    janela_inclusao.geometry("650x750")  # Ajuste no tamanho da janela para permitir mais espaço
     janela_inclusao.resizable(False, False)
 
     # Garantir que as colunas e linhas da grid se ajustem ao tamanho da janela
     janela_inclusao.grid_columnconfigure(0, weight=1, minsize=100)
     janela_inclusao.grid_columnconfigure(1, weight=3, minsize=200)
-    janela_inclusao.grid_rowconfigure(15, weight=1, minsize=50)  # Garantir que a última linha tenha espaço para os botões
+    
+    # Configurando o peso das linhas para garantir que a última linha (onde os botões estão) tenha mais espaço
+    for i in range(16):  # Configurando peso para as linhas, até a linha 15
+        janela_inclusao.grid_rowconfigure(i, weight=1)
 
     # Definindo os campos de entrada
     tk.Label(janela_inclusao, text="Nome:").grid(row=0, column=0, padx=10, pady=5, sticky='w')
@@ -341,11 +409,34 @@ def abrir_janela_inclusao():
 
     ##################### SALVANDO DATA ATUAL NO FORMULARIO ########################################################## 
     # Obtendo a data atual no formato DD/MM/AAAA
-    data_atual = datetime.now().strftime("%d/%m/%Y")  # Agora você usa diretamente datetime.now()
+    from datetime import datetime
+
+# Obtendo a data atual no formato DD/MM/AAAA
+    data_atual = datetime.now().strftime("%d/%m/%Y")  # Data atual no formato DD/MM/YYYY
     tk.Label(janela_inclusao, text="Data de Emissão:").grid(row=14, column=0, padx=10, pady=5, sticky='w')
+
     campo_data_emissao_inclusao = tk.Entry(janela_inclusao, width=12)
     campo_data_emissao_inclusao.grid(row=14, column=1, padx=10, pady=5)
-    campo_data_emissao_inclusao.insert(0, data_atual)
+    campo_data_emissao_inclusao.insert(0, data_atual)  # Preenchendo o campo com a data atual
+
+# Capturando o valor da data inserido pelo usuário
+    dataEmissao = campo_data_emissao_inclusao.get()
+    print(f"Data inserida pelo usuário: {dataEmissao}")  # Verificação para garantir que o valor foi capturado corretamente
+
+# Tentando converter a data de DD/MM/YYYY para YYYY-MM-DD
+    try:
+        dataEmissao = datetime.strptime(dataEmissao, "%d/%m/%Y").strftime("%Y-%m-%d")
+        print(f"Data convertida para o formato adequado: {dataEmissao}")  # Verifique se a conversão está correta
+    except ValueError as e:
+        print(f"Erro ao converter a data: {e}")
+    # Caso haja erro de formatação, a data não foi convertida corretamente.
+        messagebox.showerror("Erro", "A data inserida não está no formato correto (DD/MM/YYYY).")
+        return  # Encerra a função, pois a data não é válida
+
+# Agora, a data está convertida e pronta para ser inserida no banco
+    print(f"Data pronta para inserção no banco: {dataEmissao}")
+
+######################################################################### INCLUINDO RECIBO MANUAL ACIMA #################
 
     ########################################################################################################################
     ##################### FUNÇÃO CALCULAR VALOR LIQUIDO = SOMA tudo - DESCONTO = VALOR LIQUIDO ##############################
@@ -375,99 +466,103 @@ def abrir_janela_inclusao():
         cpfcnpj = campo_cpfcnpj_inclusao.get()
         endereco = campo_endereco_inclusao.get()
         aluguel = campo_aluguel_inclusao.get()
-        
-
+    
         valor_liquido = calcular_valor_liquido()  # Chama a função para calcular o valor líquido
-        agua = campo_agua_inclusao.get()
-        luz = campo_luz_inclusao.get()
-        condominio = campo_condominio_inclusao.get()
-        iptu = campo_iptu_inclusao.get()
-        internet = campo_internet_inclusao.get()
-        limpeza = campo_limpeza_inclusao.get()
-        outros = campo_outros_inclusao.get()
-        descontos = campo_descontos_inclusao.get()
-        referente = campo_referente_inclusao.get()
-        dataEmissao = campo_data_emissao_inclusao.get()
-        observacao = campo_observacao_inclusao.get()
-
+        data_emissao = campo_data_emissao_inclusao.get()
+    
         if not nome or not aluguel:
             messagebox.showwarning("Atenção", "NOME e ALUGUEL são Campos Obrigatórios.")
             janela_inclusao.attributes('-topmost', True)
             return
 
         try:
-            # Conexão com MySQL
-            conexao = mysql.connector.connect(
-                host="localhost",  # Substitua pelo seu host MySQL
-                user="root",     # Substitua pelo seu usuário MySQL
-                password="mysql147",   # Substitua pela sua senha MySQL
-                database="dados"    # Substitua pelo seu banco de dados
-            )
+        # Conectando ao banco de dados MySQL
+            conn = mysql.connector.connect(
+                host="localhost", user="root", password="mysql147", database="Dados"
+        )
+            cursor = conn.cursor()
 
-            cursor = conexao.cursor()
+        # Garantir que os valores sejam convertidos para float
+            aluguel = float(aluguel or 0.0)
+            agua = float(campo_agua_inclusao.get() or 0.0)
+            luz = float(campo_luz_inclusao.get() or 0.0)
+            condominio = float(campo_condominio_inclusao.get() or 0.0)
+            iptu = float(campo_iptu_inclusao.get() or 0.0)
+            internet = float(campo_internet_inclusao.get() or 0.0)
+            limpeza = float(campo_limpeza_inclusao.get() or 0.0)
+            outros = float(campo_outros_inclusao.get() or 0.0)
+            descontos = float(campo_descontos_inclusao.get() or 0.0)
 
-            # Ajuste dos campos vazios para valores numéricos
-            aluguel = float(aluguel) if aluguel else 0.0
-            agua = float(agua) if agua else 0.0
-            luz = float(luz) if luz else 0.0
-            condominio = float(condominio) if condominio else 0.0
-            iptu = float(iptu) if iptu else 0.0
-            internet = float(internet) if internet else 0.0
-            limpeza = float(limpeza) if limpeza else 0.0
-            outros = float(outros) if outros else 0.0
-            descontos = float(descontos) if descontos else 0.0
-            valor_liquido = float(valor_liquido) if valor_liquido else 0.0
+        # Formatação dos valores para 2 casas decimais
+            aluguel_formatado = f"{aluguel:.2f}"
+            agua_formatado = f"{agua:.2f}"
+            luz_formatado = f"{luz:.2f}"
+            condominio_formatado = f"{condominio:.2f}"
+            iptu_formatado = f"{iptu:.2f}"
+            internet_formatado = f"{internet:.2f}"
+            limpeza_formatado = f"{limpeza:.2f}"
+            outros_formatado = f"{outros:.2f}"
+            descontos_formatado = f"{descontos:.2f}"
+            valor_liquido_formatado = f"{valor_liquido:.2f}"
 
-            # Comando SQL para inserir os dados no banco MySQL
+        # Garantindo que campos opcionais como 'referente', 'observacao', etc., sejam preenchidos corretamente
+            referente = campo_referente_inclusao.get() or None
+            observacao = campo_observacao_inclusao.get() or None
+           
+
+        # Query de inserção
             query = '''
-                INSERT INTO recibos (nome, cnpj, endereco, aluguel, dataEmissao, agua, luz, condominio, iptu, internet, limpeza, outros, descontos, referente, observacao, valor_liquido)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            '''
-            cursor.execute(query, (nome, cpfcnpj, endereco, f"{aluguel:.2f}", dataEmissao, f"{agua:.2f}", f"{luz:.2f}", f"{condominio:.2f}", f"{iptu:.2f}", f"{internet:.2f}", f"{limpeza:.2f}", f"{outros:.2f}", f"{descontos:.2f}", referente, observacao, f"{valor_liquido:.2f}"))
+        INSERT INTO recibos (nome, cpfcnpj, endereco, aluguel, valor_liquido, referente, dataEmissao, agua, luz, condominio, iptu, internet, limpeza, outros, descontos, observacao)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        '''
 
-            # Commit e fechamento da conexão
-            conexao.commit()
-            conexao.close()
+        # Executando a query com os parâmetros
+            cursor.execute(query, (
+                nome, cpfcnpj, endereco, aluguel_formatado, valor_liquido_formatado, referente, dataEmissao, agua_formatado,
+                luz_formatado, condominio_formatado, iptu_formatado, internet_formatado, limpeza_formatado,
+                outros_formatado, descontos_formatado, observacao
+        ))
 
+        # Commit na transação e fechamento da conexão
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+        # Mensagem de sucesso
             messagebox.showinfo("Sucesso", "Recibo SALVO com Sucesso!")
             janela_inclusao.destroy()
-            buscar_cliente()  # Atualiza a tabela de dados na janela principal
 
-        except mysql.connector.Error as e:
-            messagebox.showerror("Erro", f"Erro ao Salvar no Banco de Dados: {e}")
+        except mysql.connector.Error as err:
+            messagebox.showerror("Erro", f"Erro ao conectar ao banco de dados: {err}")
 
-    # Botão para salvar
-    botao_salvar = tk.Button(janela_inclusao, text="Salvar", command=salvar_inclusao, width=15, height=2)
-    botao_salvar.grid(row=15, column=0, padx=10, pady=10, sticky='w')
 
-    # Botão para fechar
-    botao_fechar = tk.Button(janela_inclusao, text="Fechar", command=janela_inclusao.destroy, width=15, height=2)
-    botao_fechar.grid(row=15, column=1, padx=10, pady=10, sticky='e')
+            
+    ##################### CRIANDO OS BOTÕES NA PARTE INFERIOR NA INCLUSAO DOS RECIBOS MANAUSI ##################################################
+    # Criando o frame para os botões (para garantir que fiquem na parte inferior)
+    frame_botoes = tk.Frame(janela_inclusao)
+    frame_botoes.grid(row=15, column=0, columnspan=2, pady=10)  # Colocando o frame na última linha
+
+       # Botão "Fechar"
+    botao_fechar = tk.Button(frame_botoes, text="Fechar", bg="gray", fg="white", command=janela_inclusao.destroy, width=15, height=2)
+    botao_fechar.pack(side=tk.LEFT, padx=10)
+
+
+    def pressionar_enter(event):
+        salvar_inclusao()
+
+     # Botão "Salvar"
+    botao_salvar = tk.Button(frame_botoes, text="Salvar (Enter)", bg="green", fg="white",command=salvar_inclusao, width=15, height=2)
+    botao_salvar.pack(side=tk.RIGHT, padx=10)
+
+    # Associa a tecla Enter ao botão
+    janela_inclusao.bind('<Return>', pressionar_enter)
+    # Atualizar a janela (isso pode ajudar a forçar a renderização da interface corretamente)
+    janela_inclusao.update()
+
+###################################### FUNCAO PARA INCLUIR RECIBOS  MANUAL ACIMA#######
 
 
 #################################### EDITAR RECIBO ###############################################################################################
-import mysql.connector
-from tkinter import messagebox
-
-def conectar_mysql():
-    return mysql.connector.connect(
-        host="localhost",  # Endereço do servidor MySQL
-        user="root",       # Usuário MySQL
-        password="mysql147",  # Senha MySQL
-        database="dados"  # Nome do banco de dados
-    )
-
-import mysql.connector
-from tkinter import messagebox
-
-def conectar_mysql():
-    return mysql.connector.connect(
-        host="localhost",  # Endereço do servidor MySQL
-        user="root",       # Usuário MySQL
-        password="mysql147",  # Senha MySQL
-        database="dados"  # Nome do banco de dados
-    )
-
 def editar_recibo():
     try:
         item_selecionado = tree.selection()[0]  # Obtém o item selecionado da tabela
@@ -483,15 +578,15 @@ def editar_recibo():
 
         # Cria a janela de edição
         janela_editar = tk.Toplevel(janela_principal)
-        janela_editar.title(f"EDITAR RECIBO {id_recibo}")
-        janela_editar.geometry("400x520")
+        janela_editar.title(f"EDITANDO RECIBO N° {id_recibo}")
+        janela_editar.geometry("400x550")  # Aumentando a altura da janela
         janela_editar.resizable(False, False)
 
         # Define os campos e os respectivos índices
         campos = [
-            ("Nome", 1), ("CPF/CNPJ", 2), ("Endereco", 3), ("Referente", 5), ("ALUGUEL", 4),
-            ("Água", 7), ("Luz", 8), ("Condomínio", 10), ("IPTU", 11),
-            ("Internet", 12), ("Limpeza", 13), ("Outros", 14), ("DESCONTOS", 15), ("Observação", 16), ("Data de Emissão", 6),
+            ("Nome", 1), ("CPF/CNPJ", 2), ("Endereco", 3), ("Referente", 6), ("ALUGUEL", 4),
+            ("Água", 8), ("Luz", 9), ("Condomínio", 10), ("IPTU", 11),
+            ("Internet", 12), ("Limpeza", 13), ("Outros", 14), ("DESCONTOS", 15), ("Observação", 16), ("Data de Emissão", 7),
         ]
 
         entradas = {}  # Para armazenar os widgets Entry
@@ -501,7 +596,8 @@ def editar_recibo():
             tk.Label(janela_editar, text=f"{rotulo}:").grid(row=i, column=0, padx=10, pady=5, sticky='w')
             entrada = tk.Entry(janela_editar, width=40)
             entrada.grid(row=i, column=1, padx=10, pady=5)
-            entrada.insert(0, dados[indice])
+            if dados[indice]:  # Se houver dados, insira no campo, senão deixe vazio
+                entrada.insert(0, dados[indice])
             entradas[rotulo] = entrada
 
         # Função para calcular o VALOR_LIQUIDO
@@ -539,7 +635,7 @@ def editar_recibo():
                 tree.insert("", "end", values=dado)
 
         # Função para salvar a edição
-        def salvar_edicao():
+        def salvar_edicao(event=None):  # Aceita o parâmetro 'event' para o bind do Enter
             valores = {rotulo: entrada.get() for rotulo, entrada in entradas.items()}
 
             # Validações básicas
@@ -557,19 +653,18 @@ def editar_recibo():
                 c = conexao.cursor()
 
                 # Atualizar os dados no banco de dados
-                c.execute("""
-                    UPDATE recibos
-                    SET Nome = %s, CNPJ = %s, Endereco = %s, ALUGUEL = %s, Referente = %s,
-                        DataEmissao = %s, Agua = %s, Luz = %s, Condominio = %s, IPTU = %s,
-                        Internet = %s, Limpeza = %s, Outros = %s, DESCONTOS = %s, Observacao = %s, valor_liquido = %s
-                    WHERE id_recibo = %s;
-                """, (valores["Nome"], valores.get("CPF/CNPJ", ""), valores.get("Endereco", ""),
-                      float(valores.get("ALUGUEL", 0) or 0), valores.get("Referente", ""),
-                      valores.get("Data de Emissão", ""), float(valores.get("Água", 0) or 0),
-                      float(valores.get("Luz", 0) or 0), float(valores.get("Condomínio", 0) or 0),
-                      float(valores.get("IPTU", 0) or 0), float(valores.get("Internet", 0) or 0),
-                      float(valores.get("Limpeza", 0) or 0), float(valores.get("Outros", 0) or 0),
-                      float(valores.get("DESCONTOS", 0) or 0), valores.get("Observação", ""), valor_liquido, id_recibo))
+                c.execute("""UPDATE recibos SET 
+                    Nome = %s, CpfCnpj = %s, Endereco = %s, ALUGUEL = %s, Referente = %s,
+                    DataEmissao = %s, Agua = %s, Luz = %s, Condominio = %s, IPTU = %s,
+                    Internet = %s, Limpeza = %s, Outros = %s, DESCONTOS = %s, Observacao = %s, valor_liquido = %s
+                    WHERE id_recibo = %s""",
+                    (valores["Nome"], valores.get("CPF/CNPJ", ""), valores.get("Endereco", ""),
+                     float(valores.get("ALUGUEL", 0) or 0), valores.get("Referente", ""),
+                     valores.get("Data de Emissão", ""), float(valores.get("Água", 0) or 0),
+                     float(valores.get("Luz", 0) or 0), float(valores.get("Condomínio", 0) or 0),
+                     float(valores.get("IPTU", 0) or 0), float(valores.get("Internet", 0) or 0),
+                     float(valores.get("Limpeza", 0) or 0), float(valores.get("Outros", 0) or 0),
+                     float(valores.get("DESCONTOS", 0) or 0), valores.get("Observação", ""), valor_liquido, id_recibo))
 
                 conexao.commit()
                 conexao.close()
@@ -582,8 +677,39 @@ def editar_recibo():
             except mysql.connector.Error as e:
                 messagebox.showerror("Erro", f"Erro ao Salvar no Banco de Dados: {e}")
 
+        # Adicionar os botões "Incluir" e "Fechar"
+        btn_incluir = tk.Button(janela_editar, text="SALVAR (Enter)", command=salvar_edicao, bg="green", fg="white", width=15)
+        btn_incluir.grid(row=len(campos), column=1, padx=10, pady=10)
+
+        btn_fechar = tk.Button(janela_editar, text="Fechar", command=janela_editar.destroy, bg="gray", fg="white", width=10)
+        btn_fechar.grid(row=len(campos), column=0, padx=10, pady=10)
+
+        # Associar a tecla 'Enter' para chamar a função de salvar
+        janela_editar.bind("<Return>", salvar_edicao)  # Quando pressionar Enter, chama salvar_edicao
+
     except Exception as e:
         messagebox.showerror("Erro", f"Erro inesperado: {e}")
+######################################################################################
+#####################################################################################
+#####################################################################################
+# Função chamada para fechar o menu QUAL MENU?
+def fechar_menu():
+    menu_post_click.unpost()  # Fecha o menu de contexto
+
+# Função chamada quando o botão direito do mouse é pressionado
+def on_right_click(event):
+    try:
+        item_selecionado = tree.selection()[0]  # Obtém o item selecionado na árvore
+        
+        # Exibir o menu de contexto
+        menu_post_click.post(event.x_root, event.y_root)
+    
+    except IndexError:
+        messagebox.showwarning("Atenção", "Selecione um item na GRID para gerar o PDF.")
+
+####################################################################### EDITAR ACIMA #################################################################
+
+######################### VAMOS COLOCAR AQUI OS RELATORIOS AS FUNÇOES DE CADA UM
 
 def relatorio_por_data():
     pass
@@ -591,11 +717,17 @@ def relatorio_geral():
     pass
 def imprimir_recibo_selecionado():
     pass
+
+
+
 def fechar_janela():
-    janela_principal.quit()  # Corrigido de "qui" para "quit"
-####################################################################### EDITAR ACIMA #################################################################
+    janela_principal.quit() 
+
+######################### VAMOS COLOCAR AQUI OS RELATORIOS AS FUNÇOES DE CADA UM ACIMA
+
 ########################################################################################################################################################
-###################################### CADASTRO DE CLIENTE ABAIXO
+###################################### CADASTRO DE CLIENTE 
+
 import tkinter as tk
 from tkinter import messagebox
 import mysql.connector
@@ -606,16 +738,14 @@ def salvar_cliente():
     try:
         # Conectar ao banco de dados MySQL
         conn = mysql.connector.connect(
-            host='localhost',         # Endereço do servidor (pode ser 'localhost' ou IP do servidor)
-            user='root',       # Seu usuário MySQL
-            password='mysql147',     # Sua senha MySQL
-            database='dados' # O nome do seu banco de dados
+            host='localhost',
+            user='root',
+            password='mysql147',
+            database='dados'
         )
-        
-        # Criando um cursor para executar as queries
+
         cursor = conn.cursor()
 
-        # Pegando os dados inseridos no formulário
         nome = campo_nome_inclusao.get()
         fantasia = campo_fantasia_inclusao.get() or None
         cpfcnpj = campo_cpfcnpj_inclusao.get() or None
@@ -637,13 +767,10 @@ def salvar_cliente():
         internet = campo_internet_inclusao.get() or None
         limpeza = campo_limpeza_inclusao.get() or None
         outros = campo_outros_inclusao.get() or None
-       
-       
-               # Insirindo DATA automaticamente
 
-        data = datetime.now().strftime('%Y-%m-%d')  # Formato 'AAAA-MM-DD'
+        # Inserir data automaticamente
+        data = datetime.now().strftime('%Y-%m-%d')
 
-        # Verificar se algum campo obrigatório está vazio (por exemplo, nome)
         if not nome:
             messagebox.showwarning("Campos obrigatórios", "O nome é obrigatório!")
             return
@@ -652,24 +779,15 @@ def salvar_cliente():
         sql = """
         INSERT INTO pessoas (
             nome, fantasia, cpfcnpj, ie, contato, email, telefone1, telefone2, endereco, numero, complemento, bairro, cidade,
-            aluguel, agua, luz, condominio, iptu, 
-            internet, limpeza, outros
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 
-                  %s, %s, %s, %s, %s, %s, %s, %s)
+            aluguel, agua, luz, condominio, iptu, internet, limpeza, outros
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
 
-        # Dados a serem inseridos (em ordem), incluindo o campo 'rua'
         valores = (
             nome, fantasia, cpfcnpj, ie, contato, email, telefone1, telefone2, endereco, numero, complemento, bairro, cidade,
-            aluguel, agua, luz, condominio, iptu, 
-            internet, limpeza, outros
+            aluguel, agua, luz, condominio, iptu, internet, limpeza, outros
         )
 
-        # Verificar se o número de valores corresponde ao número de placeholders (%s)
-        if len(valores) != 21:
-            raise ValueError(f"O número de parâmetros não corresponde ao número de campos na consulta. Parâmetros: {len(valores)}, Query espera 21 parâmetros.")
-
-        # Executando a inserção dos dados no banco
         cursor.execute(sql, valores)
 
         # Commitando a transação (salvando no banco de dados)
@@ -678,18 +796,14 @@ def salvar_cliente():
         # Fechar a conexão
         conn.close()
 
-        # Informar ao usuário que o cliente foi salvo com sucesso
         messagebox.showinfo("Sucesso", "Cliente salvo com sucesso!")
-
-        # Limpar os campos após salvar
         limpar_campos()
 
     except mysql.connector.Error as err:
-        # Caso ocorra algum erro com o MySQL, exibe a mensagem de erro
         messagebox.showerror("Erro", f"Erro ao salvar o cliente: {err}")
     except Exception as e:
-        # Caso ocorra outro erro, exibe a mensagem de erro genérica
         messagebox.showerror("Erro", f"Erro desconhecido: {e}")
+
 
 # Função para limpar os campos após salvar
 def limpar_campos():
@@ -725,8 +839,13 @@ def fechar_janela(janela):
 def abrir_janela_inclusao_cliente():
     janela_inclusao = tk.Toplevel(janela_principal)
     janela_inclusao.title("Cadastro de Cliente")
-    janela_inclusao.geometry("600x750")  # Aumentar a altura para caber mais campos
+    janela_inclusao.geometry("600x750+5+5")  # Aumentar a altura para caber mais campos
     janela_inclusao.resizable(False, False)
+
+    # Garantir que a janela de inclusão fique na frente da janela principal
+    janela_inclusao.lift()  # Coloca a janela em primeiro plano
+    janela_inclusao.attributes("-topmost", True)  # Fica sempre na frente até ser minimizada
+    
 
     # Garantir que as colunas e linhas da grid se ajustem ao tamanho da janela
     janela_inclusao.grid_columnconfigure(0, weight=1, minsize=100)
@@ -734,7 +853,7 @@ def abrir_janela_inclusao_cliente():
     janela_inclusao.grid_rowconfigure(22, weight=1, minsize=50)  # Ajuste para o botão final
 
     # Definindo os campos de entrada
-    tk.Label(janela_inclusao, text="Nome:").grid(row=0, column=0, padx=10, pady=5, sticky='w')
+    tk.Label(janela_inclusao, text="NOME* :").grid(row=0, column=0, padx=10, pady=5, sticky='w')
     global campo_nome_inclusao
     campo_nome_inclusao = tk.Entry(janela_inclusao, width=60)
     campo_nome_inclusao.grid(row=0, column=1, padx=10, pady=5)
@@ -757,129 +876,1277 @@ def abrir_janela_inclusao_cliente():
 
     tk.Label(janela_inclusao, text="Contato:").grid(row=4, column=0, padx=10, pady=5, sticky='w')
     global campo_contato_inclusao
-    campo_contato_inclusao = tk.Entry(janela_inclusao, width=60)
+    campo_contato_inclusao = tk.Entry(janela_inclusao, width=30)
     campo_contato_inclusao.grid(row=4, column=1, padx=10, pady=5)
 
-    tk.Label(janela_inclusao, text="Email:").grid(row=5, column=0, padx=10, pady=5, sticky='w')
-    global campo_email_inclusao
-    campo_email_inclusao = tk.Entry(janela_inclusao, width=60)
-    campo_email_inclusao.grid(row=5, column=1, padx=10, pady=5)
+    tk.Label(janela_inclusao, text="ALUGUEL* :").grid(row=5, column=0, padx=10, pady=5, sticky='w')
+    global campo_aluguel_inclusao
+    campo_aluguel_inclusao = tk.Entry(janela_inclusao, width=20)
+    campo_aluguel_inclusao.grid(row=5, column=1, padx=10, pady=5)
 
-    tk.Label(janela_inclusao, text="Telefone 1:").grid(row=6, column=0, padx=10, pady=5, sticky='w')
-    global campo_telefone1_inclusao
-    campo_telefone1_inclusao = tk.Entry(janela_inclusao, width=60)
-    campo_telefone1_inclusao.grid(row=6, column=1, padx=10, pady=5)
-
-    tk.Label(janela_inclusao, text="Telefone 2:").grid(row=7, column=0, padx=10, pady=5, sticky='w')
-    global campo_telefone2_inclusao
-    campo_telefone2_inclusao = tk.Entry(janela_inclusao, width=60)
-    campo_telefone2_inclusao.grid(row=7, column=1, padx=10, pady=5)
-
-    tk.Label(janela_inclusao, text="Endereço:").grid(row=8, column=0, padx=10, pady=5, sticky='w')
+    tk.Label(janela_inclusao, text="Endereço:").grid(row=6, column=0, padx=10, pady=5, sticky='w')
     global campo_endereco_inclusao
     campo_endereco_inclusao = tk.Entry(janela_inclusao, width=60)
-    campo_endereco_inclusao.grid(row=8, column=1, padx=10, pady=5)
+    campo_endereco_inclusao.grid(row=6, column=1, padx=10, pady=5)
 
-    tk.Label(janela_inclusao, text="numero:").grid(row=9, column=0, padx=10, pady=5, sticky='w')
+    tk.Label(janela_inclusao, text="Nº:").grid(row=7, column=0, padx=10, pady=5, sticky='w')
     global campo_numero_inclusao
-    campo_numero_inclusao = tk.Entry(janela_inclusao, width=60)
-    campo_numero_inclusao.grid(row=9, column=1, padx=10, pady=5)
+    campo_numero_inclusao = tk.Entry(janela_inclusao, width=15)
+    campo_numero_inclusao.grid(row=7, column=1, padx=10, pady=5)
     
-    tk.Label(janela_inclusao, text="Complemento:").grid(row=10, column=0, padx=10, pady=5, sticky='w')
+    tk.Label(janela_inclusao, text="Nº   /    Compl.:").grid(row=7, column=0, padx=10, pady=5, sticky='w')
     global campo_complemento_inclusao
-    campo_complemento_inclusao = tk.Entry(janela_inclusao, width=60)
-    campo_complemento_inclusao.grid(row=10, column=1, padx=10, pady=5)
+    campo_complemento_inclusao = tk.Entry(janela_inclusao, width=15)
+    campo_complemento_inclusao.grid(row=7, column=3, padx=10, pady=5)
 
-    tk.Label(janela_inclusao, text="Bairro:").grid(row=11, column=0, padx=10, pady=5, sticky='w')
+    tk.Label(janela_inclusao, text="Bairro:").grid(row=9, column=0, padx=10, pady=5, sticky='w')
     global campo_bairro_inclusao
-    campo_bairro_inclusao = tk.Entry(janela_inclusao, width=60)
-    campo_bairro_inclusao.grid(row=11, column=1, padx=10, pady=5)
+    campo_bairro_inclusao = tk.Entry(janela_inclusao, width=30)
+    campo_bairro_inclusao.grid(row=9, column=1, padx=10, pady=5)
 
-    tk.Label(janela_inclusao, text="Cidade:").grid(row=12, column=0, padx=10, pady=5, sticky='w')
+    tk.Label(janela_inclusao, text="Cidade:").grid(row=10, column=0, padx=10, pady=5, sticky='w')
     global campo_cidade_inclusao
-    campo_cidade_inclusao = tk.Entry(janela_inclusao, width=60)
-    campo_cidade_inclusao.grid(row=12, column=1, padx=10, pady=5)
-    
-    tk.Label(janela_inclusao, text="Aluguel:").grid(row=13, column=0, padx=10, pady=5, sticky='w')
-    global campo_aluguel_inclusao
-    campo_aluguel_inclusao = tk.Entry(janela_inclusao, width=60)
-    campo_aluguel_inclusao.grid(row=13, column=1, padx=10, pady=5)
+    campo_cidade_inclusao = tk.Entry(janela_inclusao, width=30)
+    campo_cidade_inclusao.grid(row=10, column=1, padx=10, pady=5)
 
+    tk.Label(janela_inclusao, text="Email:").grid(row=11, column=0, padx=10, pady=5, sticky='w')
+    global campo_email_inclusao
+    campo_email_inclusao = tk.Entry(janela_inclusao, width=60)
+    campo_email_inclusao.grid(row=11, column=1, padx=10, pady=5)
+
+    tk.Label(janela_inclusao, text="Telefone 1:").grid(row=12, column=0, padx=10, pady=5, sticky='w')
+    global campo_telefone1_inclusao
+    campo_telefone1_inclusao = tk.Entry(janela_inclusao, width=15)
+    campo_telefone1_inclusao.grid(row=12, column=1, padx=10, pady=5)
+
+    tk.Label(janela_inclusao, text="Telefone 2:").grid(row=13, column=0, padx=10, pady=5, sticky='w')
+    global campo_telefone2_inclusao
+    campo_telefone2_inclusao = tk.Entry(janela_inclusao, width=15)
+    campo_telefone2_inclusao.grid(row=13, column=1, padx=10, pady=5)
+     
     tk.Label(janela_inclusao, text="Água:").grid(row=14, column=0, padx=10, pady=5, sticky='w')
     global campo_agua_inclusao
-    campo_agua_inclusao = tk.Entry(janela_inclusao, width=60)
+    campo_agua_inclusao = tk.Entry(janela_inclusao, width=15)
     campo_agua_inclusao.grid(row=14, column=1, padx=10, pady=5)
 
     tk.Label(janela_inclusao, text="Luz:").grid(row=15, column=0, padx=10, pady=5, sticky='w')
     global campo_luz_inclusao
-    campo_luz_inclusao = tk.Entry(janela_inclusao, width=60)
+    campo_luz_inclusao = tk.Entry(janela_inclusao, width=15)
     campo_luz_inclusao.grid(row=15, column=1, padx=10, pady=5)
 
     tk.Label(janela_inclusao, text="Condomínio:").grid(row=16, column=0, padx=10, pady=5, sticky='w')
     global campo_condominio_inclusao
-    campo_condominio_inclusao = tk.Entry(janela_inclusao, width=60)
+    campo_condominio_inclusao = tk.Entry(janela_inclusao, width=15)
     campo_condominio_inclusao.grid(row=16, column=1, padx=10, pady=5)
 
     tk.Label(janela_inclusao, text="IPTU:").grid(row=17, column=0, padx=10, pady=5, sticky='w')
     global campo_iptu_inclusao
-    campo_iptu_inclusao = tk.Entry(janela_inclusao, width=60)
+    campo_iptu_inclusao = tk.Entry(janela_inclusao, width=15)
     campo_iptu_inclusao.grid(row=17, column=1, padx=10, pady=5)
 
     tk.Label(janela_inclusao, text="Internet:").grid(row=18, column=0, padx=10, pady=5, sticky='w')
     global campo_internet_inclusao
-    campo_internet_inclusao = tk.Entry(janela_inclusao, width=60)
+    campo_internet_inclusao = tk.Entry(janela_inclusao, width=15)
     campo_internet_inclusao.grid(row=18, column=1, padx=10, pady=5)
 
     tk.Label(janela_inclusao, text="Limpeza:").grid(row=19, column=0, padx=10, pady=5, sticky='w')
     global campo_limpeza_inclusao
-    campo_limpeza_inclusao = tk.Entry(janela_inclusao, width=60)
+    campo_limpeza_inclusao = tk.Entry(janela_inclusao, width=15)
     campo_limpeza_inclusao.grid(row=19, column=1, padx=10, pady=5)
 
-    tk.Label(janela_inclusao, text="Outros:").grid(row=20, column=0, padx=10, pady=5, sticky='w')
+    tk.Label(janela_inclusao, text="OUTROS:").grid(row=20, column=0, padx=10, pady=5, sticky='w')
     global campo_outros_inclusao
-    campo_outros_inclusao = tk.Entry(janela_inclusao, width=60)
+    campo_outros_inclusao = tk.Entry(janela_inclusao, width=15)
     campo_outros_inclusao.grid(row=20, column=1, padx=10, pady=5)
 
     data = datetime.now().strftime("%d/%m/%Y")  # Agora você usa diretamente datetime.now()
     global campo_data_inclusao
     campo_data_inclusao = tk.Entry(janela_inclusao, width=12)
-    campo_data_inclusao.grid(row=14, column=1, padx=10, pady=5)
+    campo_data_inclusao.grid(row=21, column=1, padx=10, pady=5)
     campo_data_inclusao.insert(0, data)
 
-
-
+########### BOTOES INCLUIR CLIENTES
     # Botão para salvar as informações
-    botao_salvar = tk.Button(janela_inclusao, text="Salvar", command=salvar_cliente)
-    botao_salvar.grid(row=21, column=1, columnspan=2, pady=20)
+    btn_incluir = tk.Button(janela_inclusao, text="SALVAR (Enter)", command=salvar_cliente, bg="green", fg="white", width=15)
+    btn_incluir.grid(row=22, column=1, padx=10, pady=20)
 
-    # Botão para fechar a janela
-    botao_fechar = tk.Button(janela_inclusao, text="Fechar", command=lambda: fechar_janela(janela_inclusao))
-    botao_fechar.grid(row=21, column=0, columnspan=2)
+    btn_incluir.focus_set()
+    janela_inclusao.bind('<Return>', lambda event: salvar_cliente())
+    
+
+    btn_fechar = tk.Button(janela_inclusao, text="Fechar", command=janela_inclusao.destroy, bg="gray", fg="white", width=15)
+    btn_fechar.grid(row=22, column=0, padx=10, pady=20)
 
 
 ######################################################################## CADASTRO DE CLIENTE ACIMA #######################
 
+########################## JANELA CONSULTA CLIENTES, OUTRA JANELA SECUNDARIA
+import tkinter as tk
+from tkinter import messagebox, ttk
+import mysql.connector
+
+def abrir_janela_consulta_clientes():
+    janela_consulta = tk.Toplevel(janela_principal)  # Criando a janela de consulta
+    janela_consulta.title("Consulta de Clientes")
+    janela_consulta.geometry("1200x850+5+5")
+    
+    # Definindo as colunas para o Treeview
+    cols = ("Codigo", "Nome", "FANTASIA", "CPFCNPJ", "Telefone", "Celular", "CONTATO", "E-mail", "Endereco", "Nº", "Bairro", "Cidade", "Aluguel")
+    
+    tree = ttk.Treeview(janela_consulta, columns=cols, show="headings")  # Usando apenas o "tree"
+    
+    larguras = [10, 130, 80, 80, 60, 60, 30, 100, 150, 20, 50, 100, 40]
+    for col, largura in zip(cols, larguras):
+        tree.heading(col, text=col)
+        tree.column(col, anchor="w", width=largura)
+    
+    tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+    # Campo de texto para procurar cliente
+    lbl_nome_cliente = tk.Label(janela_consulta, text="Procurar Cliente:")
+    lbl_nome_cliente.pack(side=tk.LEFT, padx=15, pady=35)
+
+    entry_nome_cliente = tk.Entry(janela_consulta)
+    entry_nome_cliente.pack(side=tk.LEFT, padx=10, pady=10)
+    entry_nome_cliente.focus()
+
+    def procurar_cliente():
+        nome_cliente = entry_nome_cliente.get().strip()
+        
+        # Limpar a árvore (Treeview) para novos dados
+        for item in tree.get_children():
+            tree.delete(item)
+
+        try:
+            # Conectar ao banco de dados MySQL
+            conn = mysql.connector.connect(
+                host='localhost',
+                user='root',
+                password='mysql147',
+                database='dados'
+            )
+            cursor = conn.cursor()
+
+            if nome_cliente:  # Se o campo de nome não estiver vazio, buscar com filtro
+                cursor.execute(""" 
+                    SELECT id, nome, fantasia, cpfcnpj, telefone1, telefone2, contato, email, endereco, numero, bairro, cidade, aluguel
+                    FROM pessoas WHERE nome LIKE %s
+                """, ('%' + nome_cliente + '%',))  # Adiciona o filtro de nome
+            else:  # Se o campo estiver vazio, buscar todos os clientes
+                cursor.execute("""
+                    SELECT id, nome, fantasia, cpfcnpj, telefone1, telefone2, contato, email, endereco, numero, bairro, cidade, aluguel
+                    FROM pessoas
+                """)
+
+            clientes = cursor.fetchall()
+
+            # Inserir os dados no Treeview
+            for cliente in clientes:
+                tree.insert("", tk.END, values=cliente)
+
+            conn.close()
+        except mysql.connector.Error as err:
+            messagebox.showerror("Erro", f"Erro ao consultar os clientes: {err}")
+
+    # Botoes para a Janela de Consulta de Clientes
+
+    # Botão para procurar cliente
+    btn_procurar = tk.Button(janela_consulta, text="PROCURAR (Enter)", command=procurar_cliente, bg="orange", fg="black")
+    btn_procurar.pack(side=tk.LEFT, padx=10, pady=10)
+
+    # Binding para tecla "Enter" ativar o procurar_cliente
+    janela_consulta.bind('<Return>', lambda event: procurar_cliente())
+
+    # Botão para incluir cliente
+    btn_incluir_cliente = tk.Button(janela_consulta, text="INCLUIR", command=abrir_janela_inclusao_cliente, bg="green", fg="white")
+    btn_incluir_cliente.pack(side=tk.LEFT, padx=10, pady=10)
+
+    # Função para editar o cliente selecionado
+    def editar_cliente_com_parametros():
+        selected_item = tree.selection()
+        if not selected_item:
+            messagebox.showwarning("Seleção", "Selecione um cliente para editar.")
+            return
+
+        cliente_id = tree.item(selected_item[0], "values")[0]  # Obtendo o ID do cliente
+        editar_cliente(janela_consulta, tree, cliente_id)  # Chama a função de edição com o cliente_id
+
+    # Botão para editar cliente
+    btn_editar = tk.Button(janela_consulta, text="EDITAR", command=editar_cliente_com_parametros, bg="blue", fg="white")
+    btn_editar.pack(side=tk.LEFT, padx=10, pady=10)
+
+    # Função para excluir o cliente selecionado
+    def excluir_cliente():
+        selected_item = tree.selection()
+        if not selected_item:
+            messagebox.showwarning("Seleção", "Selecione um cliente para excluir.")
+            return
+
+        # Obter o ID do cliente selecionado
+        cliente_id = tree.item(selected_item[0], "values")[0]
+
+        # Criar uma nova janela para confirmação de exclusão
+        senha_janela = tk.Toplevel(janela_consulta)
+        senha_janela.title("Confirmar Exclusão")
+        tk.Label(senha_janela, text="Digite a senha para excluir o cliente:").pack(padx=10, pady=10)
+        
+        senha_entry = tk.Entry(senha_janela, show="*")
+        senha_entry.pack(padx=10, pady=5)
+
+        def verificar_senha():
+            senha = senha_entry.get()  # Pega a senha digitada
+
+            if senha != "55":  # Senha para confirmar a exclusão
+                messagebox.showerror("Erro", "Senha incorreta! Exclusão cancelada.")
+                senha_janela.destroy()
+                return
+
+            confirm = messagebox.askyesno("Confirmar Exclusão", f"Você tem certeza que deseja excluir o cliente com ID {cliente_id}?")
+            if confirm:
+                try:
+                    conn = mysql.connector.connect(
+                        host='localhost', user='root', password='mysql147', database='dados'
+                    )
+                    cursor = conn.cursor()
+
+                    # Query para deletar o cliente com base no ID
+                    query = "DELETE FROM pessoas WHERE id = %s"
+                    cursor.execute(query, (cliente_id,))
+                    conn.commit()  # Salvar a exclusão no banco
+                    
+                    # Fechar conexão
+                    cursor.close()
+                    conn.close()
+                    
+                    # Remover o item da interface (Treeview)
+                    tree.delete(selected_item)
+                    messagebox.showinfo("Sucesso", "Cliente excluído com sucesso!")
+                except mysql.connector.Error as err:
+                    messagebox.showerror("Erro", f"Erro ao excluir cliente: {err}")
+
+            senha_janela.destroy()  # Fecha a janela de senha após o processo de exclusão
+
+        # Adicionar o botão para verificar a senha
+        tk.Button(senha_janela, text="Confirmar", command=verificar_senha).pack(padx=10, pady=10)
+        senha_janela.mainloop()
+
+    # Botão para excluir cliente
+    btn_excluir = tk.Button(janela_consulta, text="Excluir", command=excluir_cliente, bg="red", fg="white")
+    btn_excluir.pack(side=tk.LEFT, padx=10, pady=10)
+
+    janela_consulta.mainloop()
 
 
 
 
 
-########################################### CRIANDO A JANELA PRINCIPAL ABAIXO
+##################################################################BOTOES DA JANELA SECUNDARIA DE CADASTRO DE CLIENTES
+#######################################################################################################################################################
+
+#######################################################################################################################################################
+########################################################################## FUNCAO DE EXCLUIR CLIENTES, ABAIXO mas não funcionou deixar provisorio
+
+
+def excluir_cliente(janela_consulta, tree):
+    try:
+        # Obter o item selecionado (linha do Treeview)
+        selected_item = tree.selection()  # Retorna a linha selecionada
+        
+        if not selected_item:
+            messagebox.showwarning("Atenção", "Selecione um cliente para excluir!")
+            return
+        
+        # Obter o ID_CLIENTE da linha selecionada
+        id_cliente = tree.item(selected_item, 'values')[0]  # O ID_CLIENTE está na primeira coluna
+        
+        # Criar uma nova janela para a senha
+        senha_janela = tk.Toplevel(janela_consulta)  # Cria uma janela secundária dentro de janela_consulta
+        senha_janela.title("Confirmar Exclusão")
+        
+        # Garantir que a janela de senha fique em primeiro plano
+        senha_janela.lift()  # Coloca a janela de senha acima da janela de consulta
+        senha_janela.focus_force()  # Garante que a janela de senha receba o foco
+        senha_janela.grab_set()  # Captura o foco e bloqueia as outras janelas até a interação terminar
+        
+        # Adicionando um rótulo (Label) e campo de entrada (Entry) para a senha
+        tk.Label(senha_janela, text="Digite a senha para excluir o cliente:").pack(padx=10, pady=10)
+        
+        senha_entry = tk.Entry(senha_janela, show="*")  # O parâmetro 'show' oculta a senha
+        senha_entry.pack(padx=10, pady=5)
+        
+        def verificar_senha():
+            senha = senha_entry.get()  # Pega a senha digitada
+            
+            if senha != "55":  # Definindo a senha de confirmação como '55' (modifique conforme necessário)
+                messagebox.showerror("Erro", "Senha incorreta! Exclusão cancelada.")
+                senha_janela.destroy()  # Fecha a janela da senha
+                return
+            
+            # Confirmar com o usuário antes de excluir
+            confirm = messagebox.askyesno("Confirmar Exclusão", f"Você tem certeza que deseja excluir o cliente com ID {id_cliente}?")
+            
+            if confirm:
+                try:
+                    # Conectando ao banco de dados MySQL
+                    conn = mysql.connector.connect(
+                        host="localhost", user="root", password="mysql147", database="Dados"
+                    )
+                    cursor = conn.cursor()
+                    
+                    # Query para deletar o cliente com base no ID
+                    query = "DELETE FROM pessoas WHERE ID_CLIENTE = %s"
+                    cursor.execute(query, (id_cliente,))
+                    conn.commit()  # Salvar a exclusão no banco
+                    
+                    # Fechar conexão
+                    cursor.close()
+                    conn.close()
+                    
+                    # Remover o item da interface (Treeview)
+                    tree.delete(selected_item)
+                    
+                    # Exibir mensagem de sucesso
+                    messagebox.showinfo("Sucesso", "Cliente excluído com sucesso!")
+                    
+                    # Aqui, trazemos a janela_consulta de volta para frente após a exclusão
+                    janela_consulta.lift()  # Traz a janela de consulta para frente
+                    janela_consulta.focus_force()  # Coloca o foco na janela de consulta
+
+                except mysql.connector.Error as err:
+                    messagebox.showerror("Erro", f"Erro ao excluir cliente: {err}")
+            
+            senha_janela.destroy()  # Fecha a janela de senha após o processo de exclusão
+
+        # Adicionando o botão para verificar a senha
+        tk.Button(senha_janela, text="Confirmar", command=verificar_senha).pack(padx=10, pady=10)
+        
+        # Exibir a janela de senha
+        senha_janela.mainloop()
+
+        # Garantir que a janela de consulta fique na frente após o fechamento da janela de confirmação de exclusão
+        janela_consulta.lift()  # Traz a janela de consulta para frente
+        janela_consulta.focus_force()  # Coloca o foco na janela de consulta
+
+    except Exception as e:
+        messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+############################################################################ EDITAR CLIENTES
+#######################################################################################################################
+##########################################################################################################################
+
+
+import tkinter as tk
+from tkinter import messagebox
+import mysql.connector
+from datetime import datetime
+
+
+def editar_cliente(janela_consulta, tree, cliente_id):
+    # Criar a janela de edição
+    janela_edicao = tk.Toplevel(janela_consulta)
+    janela_edicao.title(f"Editar Cliente - ID: {cliente_id}")
+    janela_edicao.geometry("600x700")  # Aumentei o tamanho para caber todos os campos
+
+    # Criar campos de entrada para editar os dados do cliente
+    tk.Label(janela_edicao, text="Nome:").grid(row=0, column=0, padx=10, pady=5)
+    entry_nome = tk.Entry(janela_edicao)
+    entry_nome.grid(row=0, column=1, padx=10, pady=5)
+
+    tk.Label(janela_edicao, text="Fantasia:").grid(row=1, column=0, padx=10, pady=5)
+    entry_fantasia = tk.Entry(janela_edicao)
+    entry_fantasia.grid(row=1, column=1, padx=10, pady=5)
+
+    tk.Label(janela_edicao, text="CPF/CNPJ:").grid(row=2, column=0, padx=10, pady=5)
+    entry_cpfcnpj = tk.Entry(janela_edicao)
+    entry_cpfcnpj.grid(row=2, column=1, padx=10, pady=5)
+
+    tk.Label(janela_edicao, text="Telefone:").grid(row=3, column=0, padx=10, pady=5)
+    entry_telefone = tk.Entry(janela_edicao)
+    entry_telefone.grid(row=3, column=1, padx=10, pady=5)
+
+    tk.Label(janela_edicao, text="Celular:").grid(row=4, column=0, padx=10, pady=5)
+    entry_celular = tk.Entry(janela_edicao)
+    entry_celular.grid(row=4, column=1, padx=10, pady=5)
+
+    tk.Label(janela_edicao, text="E-mail:").grid(row=5, column=0, padx=10, pady=5)
+    entry_email = tk.Entry(janela_edicao)
+    entry_email.grid(row=5, column=1, padx=10, pady=5)
+
+    # Campos adicionais
+    tk.Label(janela_edicao, text="Endereço:").grid(row=6, column=0, padx=10, pady=5)
+    entry_endereco = tk.Entry(janela_edicao)
+    entry_endereco.grid(row=6, column=1, padx=10, pady=5)
+
+    tk.Label(janela_edicao, text="Número:").grid(row=7, column=0, padx=10, pady=5)
+    entry_numero = tk.Entry(janela_edicao)
+    entry_numero.grid(row=7, column=1, padx=10, pady=5)
+
+    tk.Label(janela_edicao, text="Bairro:").grid(row=8, column=0, padx=10, pady=5)
+    entry_bairro = tk.Entry(janela_edicao)
+    entry_bairro.grid(row=8, column=1, padx=10, pady=5)
+
+    tk.Label(janela_edicao, text="Cidade:").grid(row=9, column=0, padx=10, pady=5)
+    entry_cidade = tk.Entry(janela_edicao)
+    entry_cidade.grid(row=9, column=1, padx=10, pady=5)
+
+    # Campos de valores
+    tk.Label(janela_edicao, text="Aluguel:").grid(row=10, column=0, padx=10, pady=5)
+    entry_aluguel = tk.Entry(janela_edicao)
+    entry_aluguel.grid(row=10, column=1, padx=10, pady=5)
+
+    tk.Label(janela_edicao, text="Água:").grid(row=11, column=0, padx=10, pady=5)
+    entry_agua = tk.Entry(janela_edicao)
+    entry_agua.grid(row=11, column=1, padx=10, pady=5)
+
+    tk.Label(janela_edicao, text="Luz:").grid(row=12, column=0, padx=10, pady=5)
+    entry_luz = tk.Entry(janela_edicao)
+    entry_luz.grid(row=12, column=1, padx=10, pady=5)
+
+    tk.Label(janela_edicao, text="Condomínio:").grid(row=13, column=0, padx=10, pady=5)
+    entry_condominio = tk.Entry(janela_edicao)
+    entry_condominio.grid(row=13, column=1, padx=10, pady=5)
+
+    tk.Label(janela_edicao, text="Internet:").grid(row=14, column=0, padx=10, pady=5)
+    entry_internet = tk.Entry(janela_edicao)
+    entry_internet.grid(row=14, column=1, padx=10, pady=5)
+
+    tk.Label(janela_edicao, text="IPTU:").grid(row=15, column=0, padx=10, pady=5)
+    entry_iptu = tk.Entry(janela_edicao)
+    entry_iptu.grid(row=15, column=1, padx=10, pady=5)
+
+    tk.Label(janela_edicao, text="Limpeza:").grid(row=16, column=0, padx=10, pady=5)
+    entry_limpeza = tk.Entry(janela_edicao)
+    entry_limpeza.grid(row=16, column=1, padx=10, pady=5)
+
+    tk.Label(janela_edicao, text="Outros:").grid(row=17, column=0, padx=10, pady=5)
+    entry_outros = tk.Entry(janela_edicao)
+    entry_outros.grid(row=17, column=1, padx=10, pady=5)
+
+    # Conectar ao banco de dados e buscar os dados do cliente selecionado
+    try:
+        conn = mysql.connector.connect(
+            host='localhost', user='root', password='mysql147', database='dados'
+        )
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT nome, fantasia, cpfcnpj, telefone1, telefone2, email, endereco, numero, bairro, cidade, aluguel, agua, luz, condominio, internet, iptu, limpeza, outros
+            FROM pessoas WHERE id = %s
+        """, (cliente_id,))
+        cliente = cursor.fetchone()
+
+        if cliente:
+            # Preencher os campos com os dados do cliente
+            entry_nome.insert(0, cliente[0])
+            entry_fantasia.insert(0, cliente[1])
+            entry_cpfcnpj.insert(0, cliente[2])
+            entry_telefone.insert(0, cliente[3])
+            entry_celular.insert(0, cliente[4])
+            entry_email.insert(0, cliente[5])
+            entry_endereco.insert(0, cliente[6])
+            entry_numero.insert(0, cliente[7])
+            entry_bairro.insert(0, cliente[8])
+            entry_cidade.insert(0, cliente[9])
+            entry_aluguel.insert(0, cliente[10])
+            entry_agua.insert(0, cliente[11])
+            entry_luz.insert(0, cliente[12])
+            entry_condominio.insert(0, cliente[13])
+            entry_internet.insert(0, cliente[14])
+            entry_iptu.insert(0, cliente[15])
+            entry_limpeza.insert(0, cliente[16])
+            entry_outros.insert(0, cliente[17])
+
+        conn.close()
+    except mysql.connector.Error as err:
+        messagebox.showerror("Erro", f"Erro ao carregar os dados do cliente: {err}")
+
+    # Função para salvar as alterações
+    def salvar_edicao():
+        nome = entry_nome.get()
+        fantasia = entry_fantasia.get()
+        cpfcnpj = entry_cpfcnpj.get()
+        telefone = entry_telefone.get()
+        celular = entry_celular.get()
+        email = entry_email.get()
+        endereco = entry_endereco.get()
+        numero = entry_numero.get()
+        bairro = entry_bairro.get()
+        cidade = entry_cidade.get()
+        aluguel = entry_aluguel.get()
+        agua = entry_agua.get()
+        luz = entry_luz.get()
+        condominio = entry_condominio.get()
+        internet = entry_internet.get()
+        iptu = entry_iptu.get()
+        limpeza = entry_limpeza.get()
+        outros = entry_outros.get()
+
+        if not nome or not cpfcnpj:
+            messagebox.showwarning("Campos Obrigatórios", "Nome e CPF/CNPJ são obrigatórios!")
+            return
+
+        try:
+            conn = mysql.connector.connect(
+                host='localhost', user='root', password='mysql147', database='dados'
+            )
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE pessoas SET nome = %s, fantasia = %s, cpfcnpj = %s, telefone1 = %s, telefone2 = %s, email = %s,
+                    endereco = %s, numero = %s, bairro = %s, cidade = %s, aluguel = %s, agua = %s, luz = %s, condominio = %s, internet = %s, iptu = %s, limpeza = %s, outros = %s
+                WHERE id = %s
+            """, (nome, fantasia, cpfcnpj, telefone, celular, email, endereco, numero, bairro, cidade, aluguel, agua, luz, condominio, internet, iptu, limpeza, outros, cliente_id))
+            conn.commit()
+            conn.close()
+
+            # Atualizar a Treeview na janela principal
+            for item in tree.get_children():
+                if tree.item(item, "values")[0] == cliente_id:
+                    tree.item(item, values=(cliente_id, nome, fantasia, cpfcnpj, telefone, celular, "", email, endereco, numero, bairro, cidade, aluguel))
+
+            messagebox.showinfo("Sucesso", "Cliente editado com sucesso!")
+            janela_edicao.destroy()  # Fechar janela de edição
+
+        except mysql.connector.Error as err:
+            messagebox.showerror("Erro", f"Erro ao salvar as alterações: {err}")
+
+    # Função para cancelar a edição
+    def cancelar_edicao():
+        janela_edicao.destroy()  # Fechar a janela de edição sem salvar alterações
+
+    # Botões de salvar e cancelar
+    btn_salvar = tk.Button(janela_edicao, text="Salvar", command=salvar_edicao, bg="green", fg="white")
+    btn_salvar.grid(row=18, column=0, padx=10, pady=20)
+
+    btn_cancelar = tk.Button(janela_edicao, text="Cancelar", command=cancelar_edicao, bg="red", fg="white")
+    btn_cancelar.grid(row=18, column=1, padx=10, pady=20)
+
+    janela_edicao.mainloop()
+
+
+
+####################################### GERANDO O PDF COM BOTAO DIREITO DO MOUSE MES
+from tkinter import ttk, Menu, messagebox
+import mysql.connector  # Importação correta para MySQL
+import os
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from datetime import datetime  # Importando datetime para usar a data atual
+
+# Função para gerar PDF
+def gerar_mes():
+    try:  
+        item_selecionado = tree.selection()[0]  # Obtém o item selecionado na árvore
+        id_recibo = tree.item(item_selecionado)['values'][0]  # Pegando o ID do recibo
+
+        # Conectando ao banco de dados para pegar os dados do recibo
+        conexao = mysql.connector.connect(
+            host="localhost",       # Altere para o endereço do seu servidor MySQL
+            user="root",     # Substitua pelo seu nome de usuário MySQL
+            password="mysql147",   # Substitua pela sua senha MySQL
+            database="dados"    # Substitua pelo nome do seu banco de dados
+        )
+
+        cursor = conexao.cursor()
+        
+        # Executando a consulta SQL
+        cursor.execute("SELECT * FROM recibos WHERE id_recibo = %s", (id_recibo,))
+        
+        # Buscando o resultado
+        recibos = cursor.fetchone()
+        
+        # Fechando a conexão
+        conexao.close()
+        
+        if recibos:
+            # Criando o arquivo PDF com o nome do recibo
+            caminho_pdf = f"recibo_{id_recibo}.pdf"
+            c = canvas.Canvas(caminho_pdf, pagesize=letter)
+            c.setFont("Helvetica", 12)
+
+            # Inserindo o logo no topo (ajuste o caminho do arquivo de imagem)
+            logo_path = "logo.png"  # Caminho para o arquivo de imagem do logo
+            c.drawImage(logo_path, 100, 740, width=100, height=50)  # Ajuste o tamanho e posição conforme necessário
+
+            # Título do Recibo
+            c.setFont("Helvetica-Bold", 16)
+            c.drawString(210, 760, f"Recibo Avulso N°: {recibos[0]}")
+            
+            # Adicionando informações do recibo
+            c.setFont("Helvetica", 12)
+            c.drawString(100, 725, f"Nome: {recibos[1]}")
+            c.drawString(100, 705, f"CPF/CNPJ: {recibos[2]}")
+            c.drawString(100, 685, f"Endereco: {recibos[3]}")
+            c.drawString(100, 665, f"Valor Pago: R$ {recibos[5]:.2f}")
+            c.drawString(100, 645, f"Aluguel: R$ {recibos[4]:.2f}")
+            c.drawString(100, 625, f"Descontos: {recibos[15]}")
+            c.drawString(100, 605, f"Referente: {recibos[6]}")
+            c.drawString(100, 585, f"Observacao: {recibos[16]}")
+            c.drawString(100, 555, f"Tipo: RECEBEMOS( )     PAGAMOS( )")
+            c.drawString(100, 525, "PORTO XAVIER - RS IMOBILAIRA LIDER")
+            c.drawString(100, 495, "ASS ---------------------------------------")
+
+            # Obtendo a data atual
+            data_atual = datetime.now().strftime("%d/%m/%Y")  # Formato: DD/MM/YYYY
+            c.drawString(100, 475, f"Data Emissao: {data_atual}")  # Substituindo pela data atual
+
+            # Salvar o PDF
+            c.save()
+
+            os.startfile(caminho_pdf)  # Abre o arquivo PDF gerado
+            # Mensagem de sucesso
+            messagebox.showinfo("Sucesso", f"Recibo_Avulso_{id_recibo}, Gerado com Sucesso!")
+        
+        else:
+            messagebox.showerror("Erro", "Recibo Não Encontrado.")
+
+    except IndexError:
+        messagebox.showwarning("Atenção", "Selecione um Recibo na GRID para Gerar o PDF.")
+    except mysql.connector.Error as err:
+        print(f"Erro ao conectar ou executar a consulta: {err}")
+        messagebox.showerror("Erro de Banco de Dados", "Erro ao acessar o banco de dados.")
+
+############################################################### ACIMA IMPRESSAO DO PDF COM BOTAO DIREITO MOUSE DATA ATUAL AVULSO RESUMIDO
+
+
+
+
+############################################### GERAR RECIBO PADRAO 2 VIAS - LOGO - SELECIONAR - COM DATA DE CRIACAO
+   
+from decimal import Decimal, InvalidOperation
+from num2words import num2words
+import sqlite3
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+import os
+import textwrap
+from tkinter import messagebox, simpledialog
+from tkinter import ttk  # Importando o Combobox
+
+###################################################################################
+# Função para garantir que os valores sejam formatados corretamente como Decimal
+def formatar_valor(valor):
+    try:
+        # Tenta converter o valor para Decimal
+        valor_decimal = Decimal(valor)
+        return f"R$ {valor_decimal:,.2f}"  # Formatação monetária com duas casas decimais
+    except (ValueError, InvalidOperation, TypeError):
+        # Caso não seja um número válido, retorna "R$ 0.00"
+        return "R$ 0.00"
+
+# Função para desenhar o logo no topo esquerdo de cada via
+def desenhar_logo(c, y_position):
+    c.drawImage("logo.png", 35, y_position, width=65, height=65)  # Ajuste a posição e tamanho do logo conforme necessário
+
+# Função para desenhar os dados da empresa ao lado do logo
+def desenhar_dados_empresa(c, y_position, id_recibo):
+    x_position_empresa = 160  # Definido para começar um pouco à direita do logo (ajustável conforme necessário)
+    c.setFont("Helvetica", 12)
+    c.drawString(x_position_empresa, y_position, f"IMOBILIÁRIA LIDER   10.605.092/0001-97                         RECIBO N°{id_recibo}")
+    y_position -= 12
+    c.drawString(x_position_empresa, y_position, "marcelobeutler@gmail.com | (55) 9 8116 - 9772")
+    y_position -= 12
+    c.drawString(x_position_empresa, y_position, "Rua Tiradentes, 606 Centro  98995-000 PORTO XAVIER - RS")
+    y_position -= 12
+    c.drawString(x_position_empresa, y_position, "'IMÓVEL SÓ  COM O CORRETOR'")
+    y_position -= 14
+    return y_position
+
+# Função para desenhar o texto com quebra de linha e alinhamento para iniciar a 2 via 580
+def draw_text(c, text, y, align='left', max_width=200):
+    wrapped_text = textwrap.fill(text, width=75)  # Ajuste conforme necessário 75
+    lines = wrapped_text.splitlines()
+    line_height = 12  # Altura da linha
+    for line in lines:
+        if align == 'center':
+            text_width = c.stringWidth(line, "Helvetica", 12)
+            x_position = (595 - text_width) / 2  # 595 é a largura total da página
+            c.drawString(x_position, y, line)
+        elif align == 'right':
+            text_width = c.stringWidth(line, "Helvetica", 12)
+            x_position = 595 - text_width - 50  # 50 é a margem à direita
+            c.drawString(x_position, y, line)
+        else:
+            c.drawString(50, y, line)  # Ajuste a margem esquerda conforme necessário
+        y -= line_height  # Abaixar para a próxima linha
+    return y
+
+############################################################### SELECIONANDO RECEBEMOS OU PAGAMOS
+def selecionar_operacao():
+    root = tk.Tk()
+    root.title("Seleção da Operação")
+    root.geometry("300x150")  # Tamanho da janela
+    root.resizable(False, False)
+    operacao_selecionada = None
+
+    def confirmar():
+        nonlocal operacao_selecionada
+        operacao_selecionada = combobox.get()
+        if operacao_selecionada:
+            root.quit()  # Fecha a janela
+            root.destroy()  # Destroi a janela após confirmação
+        else:
+            messagebox.showwarning("Atenção", "Selecione uma Operação antes de continuar.")
+    
+    tk.Label(root, text="Selecione a Operação:", font=("Helvetica", 12)).pack(pady=10)
+    combobox = ttk.Combobox(root, values=["RECEBEMOS DE:", "PAGAMOS A:"], state="readonly", width=20)
+    combobox.set("RECEBEMOS DE:")  # Definindo o valor padrão
+    combobox.pack(pady=10)
+    tk.Button(root, text="Confirmar", command=confirmar, bg="blue", fg="white", font=("Helvetica", 10, "bold")).pack(pady=20)
+    root.mainloop()
+
+    return operacao_selecionada
+################################# FUNÇAO QUE CONVERTE OS VALORES NAO TAO BEM GRAVADOS NO BANCO DE DADOS ###########
+###################################################################################################################
+def formatar_valor_por_extenso(valor):
+    """
+    Converte um valor numérico em reais para a forma por extenso em português.
+    Exemplo: 1505.62 -> "um mil, quinhentos e cinco reais e sessenta e dois centavos"
+    """
+    valor_int = int(valor)  # Parte inteira
+    valor_dec = round(valor - valor_int, 2)  # Parte decimal (centavos)
+
+    # Converte a parte inteira
+    valor_extenso_int = num2words(valor_int, lang='pt_BR')
+
+    # Converte a parte decimal (centavos)
+    if valor_dec > 0:
+        valor_extenso_dec = num2words(int(valor_dec * 100), lang='pt_BR')
+
+        # Corrigir a forma para "centavos" no final
+        valor_extenso_dec = f"{valor_extenso_dec} centavos"
+        return f"{valor_extenso_int} reais e {valor_extenso_dec}"
+    else:
+        return f"{valor_extenso_int} reais"
+
+##################################################################################################################
+###################################################################################################################
+
+def gerar_recibo_padrao():  # SELECIONA O ID_RECIBO E PREVISUALIZA O RECIBO PADRAO COM DATA DE CRIACAO
+    try:
+        if not tree.selection():
+            messagebox.showwarning("Selecione Um Recibo", "Por Favor, Selecione um Recibo para Prosseguir!")
+            return  # Impede a execução do resto do código
+
+        item_selecionado = tree.selection()[0]
+        id_recibo = tree.item(item_selecionado)['values'][0]
+        operacao = selecionar_operacao()  # Agora você tem o valor selecionado do ComboBox
+
+        if not operacao:
+            messagebox.showwarning("Atenção", "Operação inválida. O recibo não será gerado.")
+            return
+
+        # Conectar ao banco de dados MySQL
+        conexao = mysql.connector.connect(
+            host="localhost",       # Altere para o endereço do seu servidor MySQL
+            user="root",     # Substitua pelo seu nome de usuário MySQL
+            password="mysql147",   # Substitua pela sua senha MySQL
+            database="dados"    # Substitua pelo nome do seu banco de dados
+        )
+
+        c = conexao.cursor()
+
+        # Buscar os dados do recibo com o ID fornecido
+        c.execute("SELECT * FROM recibos WHERE id_recibo = %s", (id_recibo,))
+        dado_recibo = c.fetchone()
+
+# Fechar a conexão
+        conexao.close()
+
+        if not dado_recibo:
+            messagebox.showwarning("Atenção", f"Nenhum Recibo encontrado com o ID {id_recibo}.")
+            return
+
+        # Criar o arquivo PDF
+        nome_arquivo = f"Recibo_{id_recibo}_Padrao.pdf"
+        c = canvas.Canvas(nome_arquivo, pagesize=letter)
+
+        # Função para desenhar o recibo na mesma página
+        def desenhar_recibo(y_position, primeira_via=True):
+            desenhar_logo(c, y_position)  # Desenhar o logo no topo da via
+            y_position = desenhar_dados_empresa(c, y_position, id_recibo)
+
+            c.setFont("Helvetica", 10)
+            y_position -= 5
+
+            # Mensagem dinâmica com as variáveis
+            try:
+                valor_extenso = formatar_valor_por_extenso(Decimal(dado_recibo[5]))  # Valor por extenso
+            except InvalidOperation:
+                valor_extenso = "Valor inválido"
+
+            mensagem = f"{operacao} {dado_recibo[1]}, CPF/CNPJ: {dado_recibo[2]}, {dado_recibo[3]}. O VALOR de: {formatar_valor(dado_recibo[5])}({formatar_valor_por_extenso(dado_recibo[5])}), " \
+                       f"REFERENTE a: {dado_recibo[6]}."
+            y_position = draw_text(c, mensagem, y_position, align='right')
+            y_position -= 3
+
+            # Campos financeiros com alinhamento à direita
+            campos_financeiros = [
+                ("ALUGUEL", dado_recibo[4]),
+                ("Água", dado_recibo[8]),
+                ("Luz", dado_recibo[9]),
+                ("Condomínio", dado_recibo[10]),
+                ("IPTU", dado_recibo[11]),
+                ("Internet", dado_recibo[12]),
+                ("Limpeza", dado_recibo[13]),
+                ("Outros", dado_recibo[14]),
+                ("- DESCONTOS", dado_recibo[15]),
+                ("Total Líquido", dado_recibo[5])
+            ]
+
+            # Desenhando os campos financeiros na página com alinhamento à direita
+            for descricao, valor in campos_financeiros:
+                valor_formatado = formatar_valor(valor)
+                y_position -= 12
+                c.drawString(50, y_position, descricao)
+                c.drawString(450, y_position, valor_formatado)
+
+            y_position -= 20
+
+            # Supondo que dado_recibo[7] seja a data no formato 'YYYY-MM-DD'
+            data_original = dado_recibo[7]  # A data que vem do banco de dados
+
+# Verifica se a data original é uma string (no formato 'YYYY-MM-DD')
+            if isinstance(data_original, str):
+    # Converte a data no formato 'YYYY-MM-DD' para um objeto datetime
+                data_original = datetime.strptime(data_original, "%Y-%m-%d")
+
+# Agora, converte a data para o formato 'DD/MM/YYYY'
+            data_formatada = data_original.strftime("%d/%m/%Y")
+            
+            c.drawString(50, y_position, f"Recebido Em: {data_formatada}                          IMOBILIARIA LIDER")
+            y_position -= 30
+
+            c.drawString(80, y_position,   f"                       Ass:_____________________________________")
+            y_position -= 5
+
+           
+            return y_position  # Retorna a posição Y atualizada
+
+        # Ajustar a posição inicial de Y para a primeira via
+        y_position_inicial = 710
+
+        # Desenhar as duas vias na mesma página, ajustando a posição Y
+        y_position = desenhar_recibo(y_position_inicial)  # Primeira via
+        y_position -= 90  # Ajuste o valor para mover a segunda via para baixo
+
+        y_position -= 10  # Ajuste maior se necessário
+
+        desenhar_recibo(y_position, primeira_via=False)  # Segunda via
+
+        # Salvar a página do PDF
+        c.showPage()  # Chama o showPage após desenhar as duas vias
+        c.save()
+
+        # Mostrar mensagem de sucesso
+        messagebox.showinfo("Recibo Gerado", f"Recibo Padrao {id_recibo}, Gerado com Sucesso!")
+        os.startfile(nome_arquivo)
+
+    except Exception as e:
+        messagebox.showerror("Erro", f"Ocorreu um Erro: {str(e)}")
+############################################################################# GERAR RECIBO PADRAO ACIMA COM DATA DA CRIACAO
+#
+#
+# 
+# ######################################################RECIBO PADRAO COM DATA ATUAL E BOTAO DIREITO MOUSE  DATA ATUAL
+from decimal import Decimal, InvalidOperation
+from num2words import num2words
+import sqlite3
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+import os
+import textwrap
+from tkinter import messagebox, simpledialog
+from tkinter import ttk  # Importando o Combobox
+
+###################################################################################
+# Função para garantir que os valores sejam formatados corretamente como Decimal
+def formatar_valor(valor):
+    try:
+        # Tenta converter o valor para Decimal
+        valor_decimal = Decimal(valor)
+        return f"R$ {valor_decimal:,.2f}"  # Formatação monetária com duas casas decimais
+    except (ValueError, InvalidOperation, TypeError):
+        # Caso não seja um número válido, retorna "R$ 0.00"
+        return "R$ 0.00"
+
+# Função para desenhar o logo no topo esquerdo de cada via
+def desenhar_logo(c, y_position):
+    c.drawImage("logo.png", 35, y_position, width=65, height=65)  # Ajuste a posição e tamanho do logo conforme necessário
+
+# Função para desenhar os dados da empresa ao lado do logo
+def desenhar_dados_empresa(c, y_position, id_recibo):
+    x_position_empresa = 160  # Definido para começar um pouco à direita do logo (ajustável conforme necessário)
+    c.setFont("Helvetica", 12)
+    c.drawString(x_position_empresa, y_position, f"IMOBILIÁRIA LIDER   10.605.092/0001-97                         RECIBO N°{id_recibo}")
+    y_position -= 12
+    c.drawString(x_position_empresa, y_position, "marcelobeutler@gmail.com | (55) 9 8116 - 9772")
+    y_position -= 12
+    c.drawString(x_position_empresa, y_position, "Rua Tiradentes, 606 Centro  98995-000 PORTO XAVIER - RS")
+    y_position -= 12
+    c.drawString(x_position_empresa, y_position, "'IMÓVEL SÓ  COM O CORRETOR'")
+    y_position -= 14
+    return y_position
+
+# Função para desenhar o texto com quebra de linha e alinhamento para iniciar a 2 via 580
+def draw_text(c, text, y, align='left', max_width=200):
+    wrapped_text = textwrap.fill(text, width=75)  # Ajuste conforme necessário 75
+    lines = wrapped_text.splitlines()
+    line_height = 12  # Altura da linha
+    for line in lines:
+        if align == 'center':
+            text_width = c.stringWidth(line, "Helvetica", 12)
+            x_position = (595 - text_width) / 2  # 595 é a largura total da página
+            c.drawString(x_position, y, line)
+        elif align == 'right':
+            text_width = c.stringWidth(line, "Helvetica", 12)
+            x_position = 595 - text_width - 50  # 50 é a margem à direita
+            c.drawString(x_position, y, line)
+        else:
+            c.drawString(50, y, line)  # Ajuste a margem esquerda conforme necessário
+        y -= line_height  # Abaixar para a próxima linha
+    return y
+
+############################################################### SELECIONANDO RECEBEMOS OU PAGAMOS
+def selecionar_operacao():
+    root = tk.Tk()
+    root.title("Seleção da Operação")
+    root.geometry("300x150")  # Tamanho da janela
+    root.resizable(False, False)
+    operacao_selecionada = None
+
+    def confirmar():
+        nonlocal operacao_selecionada
+        operacao_selecionada = combobox.get()
+        if operacao_selecionada:
+            root.quit()  # Fecha a janela
+            root.destroy()  # Destroi a janela após confirmação
+        else:
+            messagebox.showwarning("Atenção", "Selecione uma Operação antes de continuar.")
+    
+    tk.Label(root, text="Selecione a Operação:", font=("Helvetica", 12)).pack(pady=10)
+    combobox = ttk.Combobox(root, values=["RECEBEMOS DE:", "PAGAMOS A:"], state="readonly", width=20)
+    combobox.set("RECEBEMOS DE:")  # Definindo o valor padrão
+    combobox.pack(pady=10)
+    tk.Button(root, text="Confirmar", command=confirmar, bg="blue", fg="white", font=("Helvetica", 10, "bold")).pack(pady=20)
+    root.mainloop()
+
+    return operacao_selecionada
+################################# FUNÇAO QUE CONVERTE OS VALORES NAO TAO BEM GRAVADOS NO BANCO DE DADOS ###########
+###################################################################################################################
+def formatar_valor_por_extenso(valor):
+    """
+    Converte um valor numérico em reais para a forma por extenso em português.
+    Exemplo: 1505.62 -> "um mil, quinhentos e cinco reais e sessenta e dois centavos"
+    """
+    valor_int = int(valor)  # Parte inteira
+    valor_dec = round(valor - valor_int, 2)  # Parte decimal (centavos)
+
+    # Converte a parte inteira
+    valor_extenso_int = num2words(valor_int, lang='pt_BR')
+
+    # Converte a parte decimal (centavos)
+    if valor_dec > 0:
+        valor_extenso_dec = num2words(int(valor_dec * 100), lang='pt_BR')
+
+        # Corrigir a forma para "centavos" no final
+        valor_extenso_dec = f"{valor_extenso_dec} centavos"
+        return f"{valor_extenso_int} reais e {valor_extenso_dec}"
+    else:
+        return f"{valor_extenso_int} reais"
+
+##################################################################################################################
+###################################################################################################################
+
+def gerar_recibo_padrao_data():  # SELECIONA O ID_RECIBO E PREVISUALIZA O RECIBO PADRAO = FUNCAO GERAR_RECIBO_PADRAO_DATA
+    try:
+        if not tree.selection():
+            messagebox.showwarning("Selecione Um Recibo", "Por Favor, Selecione um Recibo para Prosseguir!")
+            return  # Impede a execução do resto do código
+
+        item_selecionado = tree.selection()[0]
+        id_recibo = tree.item(item_selecionado)['values'][0]
+        operacao = selecionar_operacao()  # Agora você tem o valor selecionado do ComboBox
+
+        if not operacao:
+            messagebox.showwarning("Atenção", "Operação inválida. O recibo não será gerado.")
+            return
+
+        # Conectar ao banco de dados MySQL
+        conexao = mysql.connector.connect(
+            host="localhost",       # Altere para o endereço do seu servidor MySQL
+            user="root",     # Substitua pelo seu nome de usuário MySQL
+            password="mysql147",   # Substitua pela sua senha MySQL
+            database="dados"    # Substitua pelo nome do seu banco de dados
+        )
+
+        c = conexao.cursor()
+
+        # Buscar os dados do recibo com o ID fornecido
+        c.execute("SELECT * FROM recibos WHERE id_recibo = %s", (id_recibo,))
+        dado_recibo = c.fetchone()
+
+# Fechar a conexão
+        conexao.close()
+
+        if not dado_recibo:
+            messagebox.showwarning("Atenção", f"Nenhum Recibo encontrado com o ID {id_recibo}.")
+            return
+
+        # Criar o arquivo PDF
+        nome_arquivo = f"Recibo_{id_recibo}_Padrao.pdf"
+        c = canvas.Canvas(nome_arquivo, pagesize=letter)
+
+        # Função para desenhar o recibo na mesma página
+        def desenhar_recibo(y_position, primeira_via=True):
+            desenhar_logo(c, y_position)  # Desenhar o logo no topo da via
+            y_position = desenhar_dados_empresa(c, y_position, id_recibo)
+
+            c.setFont("Helvetica", 10)
+            y_position -= 5
+
+            # Mensagem dinâmica com as variáveis
+            try:
+                valor_extenso = formatar_valor_por_extenso(Decimal(dado_recibo[5]))  # Valor por extenso
+            except InvalidOperation:
+                valor_extenso = "Valor inválido"
+
+        ##################  Obtendo a data atual#####################
+            data_atual = datetime.now().strftime("%d/%m/%Y")  # Formato: DD/MM/YYYY
+            
+
+        ###############################################################################################    
+
+            mensagem = f"{operacao} {dado_recibo[1]}, CPF/CNPJ: {dado_recibo[2]}, {dado_recibo[3]}. O VALOR de: {formatar_valor(dado_recibo[5])}({formatar_valor_por_extenso(dado_recibo[5])}), " \
+                       f"REFERENTE a: {dado_recibo[6]}."
+                        
+
+            y_position = draw_text(c, mensagem, y_position, align='right')
+            y_position -= 3
+
+            # Campos financeiros com alinhamento à direita
+            campos_financeiros = [
+                ("ALUGUEL", dado_recibo[4]),
+                ("Água", dado_recibo[8]),
+                ("Luz", dado_recibo[9]),
+                ("Condomínio", dado_recibo[10]),
+                ("IPTU", dado_recibo[11]),
+                ("Internet", dado_recibo[12]),
+                ("Limpeza", dado_recibo[13]),
+                ("Outros", dado_recibo[14]),
+                ("- DESCONTOS", dado_recibo[15]),
+                ("Total Líquido", dado_recibo[5])
+            ]
+
+            # Desenhando os campos financeiros na página com alinhamento à direita
+            for descricao, valor in campos_financeiros:
+                valor_formatado = formatar_valor(valor)
+                y_position -= 12
+                c.drawString(50, y_position, descricao)
+                c.drawString(450, y_position, valor_formatado)
+
+            y_position -= 20
+
+            # Nome do Recebedor e DATA
+
+            #c.drawString(100, 475, f"Data Emissao: {data_atual}")  # Substituindo pela data atual
+            c.drawString(50, y_position, f"Recebido Em: {data_atual}                          IMOBILIARIA LIDER")
+            y_position -= 30
+
+            c.drawString(80, y_position,   f"                       Ass:_____________________________________")
+            y_position -= 5
+
+            
+            return y_position  # Retorna a posição Y atualizada
+
+        # Ajustar a posição inicial de Y para a primeira via
+        y_position_inicial = 710
+
+        # Desenhar as duas vias na mesma página, ajustando a posição Y
+        y_position = desenhar_recibo(y_position_inicial)  # Primeira via
+        y_position -= 90  # Ajuste o valor para mover a segunda via para baixo
+
+        y_position -= 10  # Ajuste maior se necessário
+
+        desenhar_recibo(y_position, primeira_via=False)  # Segunda via
+
+        # Salvar a página do PDF
+        c.showPage()  # Chama o showPage após desenhar as duas vias
+        c.save()
+
+        # Mostrar mensagem de sucesso
+        messagebox.showinfo("Recibo Gerado", f"Recibo {id_recibo} , com DATA DE HOJE, Gerado com Sucesso!")
+        os.startfile(nome_arquivo)
+
+    except Exception as e:
+        messagebox.showerror("Erro", f"Ocorreu um Erro: {str(e)}")
+
+################################### RECIBO PADRAO DATA ATUAL ACIMA ##################################
+
+############################################################## FUNCAO DO BOTAO DIREITO MOUSE
+# Função chamada para fechar o menu
+def fechar_menu():
+    menu_post_click.unpost()  # Fecha o menu de contexto
+
+# Função chamada quando o botão direito do mouse é pressionado
+def on_right_click(event):
+    try:
+        item_selecionado = tree.selection()[0]  # Obtém o item selecionado na árvore
+        
+        # Exibir o menu de contexto
+        menu_post_click.post(event.x_root, event.y_root)
+    
+    except IndexError:
+        messagebox.showwarning("Atenção", "Selecione um item na GRID para gerar o PDF.")
+
+# Função que gera o PDF e fecha o menu de contexto
+def gerar_e_fechar():
+    gerar_mes()  # Chama a função para gerar o PDF
+    menu_post_click.unpost()  # Fecha o menu de contexto
+################################################# USANDO O CLIC BOTAO DIREITO DO MOUSE ACIMA#################
+
+######### FAZER BACKUP TOTAL DA PASTA DO SISTEMA
+# Função para realizar o backup com robocopy
+def realizar_backup():
+    try:
+        # Caminho de origem e destino do backup
+        origem = "C:\\Sigeflex\\recibo"  # Diretório de origem
+        destino = "C:\\Sigeflex\\Backup"  # Diretório de destino
+        
+        # Comando de backup usando xcopy (você pode mudar para robocopy se preferir)
+        comando_backup = f'robocopy "{origem}" "{destino}" /E /Z /R:3 /W:5'
+
+        # Executando o comando no sistema
+        os.system(comando_backup)
+
+        # Exibe uma mensagem de sucesso
+        messagebox.showinfo("Backup Realizado com Sucesso", "Salvo na Pasta Backup(C:\Recibo\Backup), Recomendamos salvar em Midia Externa")
+        
+    except Exception as e:
+        # Se houver um erro, exibe uma mensagem de erro
+        messagebox.showerror("Erro", f"Erro ao realizar o backup: {e}")
+################################################
+# Função para criar a janela principal
+def criar_janela_principal():
+    janela_boas = ctk.CTk()
+    janela_boas.title("Bem Vindo A GDI")
+    janela_boas.geometry("690x250")
+    janela_boas.resizable(False, False)
+
+    ctk.CTkLabel(janela_boas, text="Seja Bem-Vindo aos Sistemas Desenvolvidos pela GDI", font=("Arial", 16)).pack(pady=10)
+    ctk.CTkLabel(janela_boas, text="*** Agora em MYSQL, um Banco Muito Mais Robusto, e com Possibilidade também de Fazer Backup - Versão 2024.2***", font=("Arial", 12)).pack(pady=5)
+    ctk.CTkLabel(janela_boas, text="DÚVIDAS: (54) 9 9104-1029", font=("Arial", 16)).pack(pady=10)
+
+    # Botão para realizar o backup
+    btn_backup = tk.Button(janela_boas, text="Realizar Backup Agora", command=realizar_backup, bg="green", fg="white", width=20)
+    btn_backup.pack(padx=10, pady=10)
+
+# Botão para fechar a janela
+    btn_fechar = tk.Button(janela_boas, text="CONTINUAR - Fechar", command=janela_boas.destroy, bg="purple", fg="white", width=20)
+    btn_fechar.pack(padx=10, pady=10)
+
+
+  
+    # Executar a janela
+    janela_boas.mainloop()
+
+# Chama a função para criar a janela principal
+criar_janela_principal()
+
+
+
+# BACKUP DENTRO DO SISTEMA QUE POSSO ESCOLHER QUAL PASTA SALVAR
+import os
+import subprocess
+import threading
+from tkinter import filedialog, messagebox
+from tkinter import ttk
+import tkinter as tk
+
+# Função para realizar o backup
+def realizar_backup_2():
+    # Abrir uma janela de diálogo para o usuário escolher o diretório de destino
+    destino = filedialog.askdirectory(title="Escolha a Pasta de destino para o Fazer o Backup")
+
+    # Verificar se o usuário escolheu um diretório
+    if not destino:
+        messagebox.showinfo("Backup", "Backup cancelado. Nenhuma Pasta Selecionado.")
+        return
+
+    # Criar a janela de progresso APÓS a seleção do diretório
+    janela_progresso = tk.Toplevel()  # Cria uma janela nova, independente
+    janela_progresso.title("Aguarde... Realizando Backup")
+    janela_progresso.geometry("400x150")
+
+    # Criar uma barra de progresso
+    barra_progresso = ttk.Progressbar(janela_progresso, orient="horizontal", length=300, mode="indeterminate")
+    barra_progresso.pack(padx=10, pady=20)
+    barra_progresso.start()  # Inicia a barra de progresso (em modo indeterminado)
+
+    # Certifique-se de que a janela de progresso está à frente
+    janela_progresso.lift()  # Trazer a janela de progresso para a frente
+
+    # Função para realizar o backup em uma thread separada
+    def backup_thread():
+        try:
+            origem = "C:\\Sigeflex"  # Caminho de origem
+
+            # Verificar se o diretório de destino existe, caso contrário, criar
+            if not os.path.exists(destino):
+                os.makedirs(destino)
+
+            # Comando de backup usando xcopy
+            comando_backup = f'xcopy /E /I /H /Y "{origem}" "{destino}"'
+
+            # Executando o comando no sistema
+            processo = subprocess.run(comando_backup, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            # Verificando se o comando foi executado com sucesso
+            if processo.returncode == 0:
+                messagebox.showinfo("Sucesso", "Backup Realizado com Sucesso!")
+            else:
+                messagebox.showerror("Erro", f"Erro ao realizar o backup: {processo.stderr.decode()}")
+        
+        except subprocess.CalledProcessError as e:
+            messagebox.showerror("Erro", f"Erro na execução do comando de backup: {e}")
+        except Exception as e:
+            messagebox.showerror("Erro", f"Ocorreu um erro inesperado: {e}")
+        finally:
+            janela_progresso.destroy()  # Fecha a janela de progresso após o backup
+
+    # Executar a função de backup em uma thread separada
+    thread = threading.Thread(target=backup_thread)
+    thread.start()
+
+#################################### CRIADO ACIMA BACKUP INTERNO NO SISTEMA PARA SALVAR EM X PASTA QUE ESCOLHER
+
+
+########################################## CRIANDO A JANELA PRINCIPAL ABAIXO#####################
 # Criando a janela principal
 janela_principal = tk.Tk()
 janela_principal.title("Gerenciador de Recibos - GDI")
-janela_principal.geometry("1200x650+0+0")
+janela_principal.geometry("1220x650+5+5")
 
 # Criando o menu
 menu_bar = tk.Menu(janela_principal)
 
 # Menu Cadastros
-menu_Clientes = tk.Menu(menu_bar, tearoff=0)
-menu_Clientes.add_command(label="Cadastrar Cliente", command=abrir_janela_inclusao_cliente)
-menu_Clientes.add_separator()
-menu_Clientes.add_command(label="CONSULTAR Cliente", command=abrir_janela_inclusao_cliente)
-menu_Clientes.add_separator()
-menu_Clientes.add_command(label="Incluir Recibo Manual", command=abrir_janela_inclusao)
+menu_Cadastro = tk.Menu(menu_bar, tearoff=0)
+menu_Cadastro.add_command(label="CADASTRAR Clientes", command=abrir_janela_inclusao_cliente)
+menu_Cadastro.add_separator()
+menu_Cadastro.add_command(label="CONSULTAR Cliente", command=abrir_janela_consulta_clientes)
+menu_Cadastro.add_separator()
+menu_Cadastro.add_command(label="INCLUIR Recibo Manual", command=abrir_janela_inclusao)
 
 # Menu Relatórios
 menu_relatorios = tk.Menu(menu_bar, tearoff=0)
@@ -891,18 +2158,20 @@ menu_relatorios.add_command(label="Relatório Geral", command=relatorio_geral)
   # Se quiser uma linha separadora
 
 # Menu Imprimir
-menu_imprimir = tk.Menu(menu_bar, tearoff=0)
-menu_imprimir.add_command(label="Imprimir Recibo Selecionado", command=imprimir_recibo_selecionado)
+menu_preferencias = tk.Menu(menu_bar, tearoff=0)
+menu_preferencias.add_command(label="Opcoes do Sistema", command=fechar_janela)
 
 # Menu Sair
-menu_sair = tk.Menu(menu_bar, tearoff=0)
-menu_sair.add_command(label="Sair", command=fechar_janela)
+menu_ajuda = tk.Menu(menu_bar, tearoff=0)
+menu_ajuda.add_command(label="Fazer Backup", command=realizar_backup_2)
+menu_ajuda.add_command(label="Sair", command=fechar_janela)
+
 
 # Adicionando os submenus ao menu principal
-menu_bar.add_cascade(label="CLIENTES", menu=menu_Clientes)
-menu_bar.add_cascade(label="Relatórios", menu=menu_relatorios)
-menu_bar.add_cascade(label="Imprimir", menu=menu_imprimir)
-menu_bar.add_cascade(label="FECHAR", menu=menu_sair)  # Aqui adiciona o menu "Sair"
+menu_bar.add_cascade(label="CADASTRO", menu=menu_Cadastro)
+menu_bar.add_cascade(label="RELATORIOS", menu=menu_relatorios)
+menu_bar.add_cascade(label="Preferencias", menu=menu_preferencias)
+menu_bar.add_cascade(label="Ajuda", menu=menu_ajuda)  # Aqui adiciona o menu "Sair"
 
 # Adicionando o menu à janela principal
 janela_principal.config(menu=menu_bar)
@@ -916,49 +2185,74 @@ janela_principal.grid_columnconfigure(1, weight=1)
 janela_principal.grid_columnconfigure(2, weight=1)
 janela_principal.grid_columnconfigure(3, weight=1)
 #############################################################################################################
-#####################################################BUSCAR CLIENTE INTERFACE PRINCIPAL
 
+#####################################################BUSCAR CLIENTE INTERFACE PRINCIPAL
 # Botões e campos de entrada para busca
-tk.Label(janela_principal, text="Nome do Cliente:").grid(row=0, column=0, padx=15, pady=10, sticky='w')
+tk.Label(janela_principal, text="NOME:").grid(row=0, column=0, padx=5, pady=10, sticky='w')
 campo_busca_nome = tk.Entry(janela_principal, width=40)
 campo_busca_nome.grid(row=0, column=0, padx=10, pady=10)
-campo_busca_nome.bind("<Return>", buscar_cliente) # Pressionar ENTER ativa a busca
-campo_busca_nome.focus_set()
+campo_busca_nome.bind("<Return>", buscar_recibos) # Pressionar ENTER ativa a busca
+
 
 # # CODIGO PARA INSERIR DESCRIÇAO E CAMPO PARA inserir id_recibo para PROCURAR
-tk.Label(janela_principal, text="Número Cliente:").grid(row=0, column=1, padx=10, pady=10, sticky='w')
+tk.Label(janela_principal, text="NÚMERO:").grid(row=0, column=1, padx=8, pady=10, sticky='w')
 campo_busca_recibo = tk.Entry(janela_principal, width=15)
 campo_busca_recibo.grid(row=0, column=1, padx=10, pady=10)
-campo_busca_recibo.bind("<Return>", buscar_cliente)  
+campo_busca_recibo.bind("<Return>", buscar_recibos)  
 
 # Botões de funções
-btn_incluir = tk.Button(janela_principal, text="Incluir NOVO", command=abrir_janela_inclusao, bg="green", fg="white", width=10)
+btn_buscar = tk.Button(janela_principal, text="PROCURAR - (Enter)", command=buscar_recibos, bg="orange", fg="black")
+btn_buscar.grid(row=0, column=2, padx=10, pady=10)
+
+btn_incluir = tk.Button(janela_principal, text="INCLUIR RECIBO MANUAL", command=abrir_janela_inclusao, bg="green", fg="white", width=20)
 btn_incluir.grid(row=2, column=0, padx=10, pady=10)
 
-btn_editar = tk.Button(janela_principal, text="EDITAR", command=editar_recibo, bg="orange", fg="red", width=10)
+btn_editar = tk.Button(janela_principal, text="EDITAR", command=editar_recibo, bg="blue", fg="white", width=10)
 btn_editar.grid(row=2, column=1, padx=10, pady=10)
 
 btn_excluir = tk.Button(janela_principal, text="Excluir", command=excluir_recibo, bg="red", fg="white")
 btn_excluir.grid(row=2, column=2, padx=10, pady=10)
 
-btn_buscar = tk.Button(janela_principal, text="PROCURAR - 'Enter'", command=buscar_cliente, bg="orange", fg="black")
-btn_buscar.grid(row=2, column=3, padx=10, pady=10)
-
 # Botão FECHAR
 btn_fechar = tk.Button(janela_principal, text="Fechar", command=janela_principal.destroy, bg="gray", fg="white")  # FECHAR JANELA PRINCIPAL
-btn_fechar.grid(row=3, column=3, padx=10, pady=10)
+btn_fechar.grid(row=2, column=3, padx=10, pady=10)
 
 # Criando a árvore (grid de dados)
-cols = ("Codigo", "Tipo", "Nome", "FANTASIA", "CPFCNPJ", "IE", "Telefone", "Celular", "CONTATO", "E-mail", "Endereco", "Nº", "COMPL.", "Bairro", "Cidade", "Data", "Aluguel")
+cols = ("Codigo", "NOME", "CpfCnpj", "Endereco", "ALUGUEL", "VLR_PAGO", "REFERENTE", "DATA", "Agua", "Luz", "Condomínio", "IPTU", "Internet", "Limpeza", "OUTROS", "DESCONTO", "OBS")
 tree = ttk.Treeview(janela_principal, columns=cols, show="headings")
 
 # Definindo larguras
-larguras = [20, 10, 60, 50, 50, 50, 80, 80, 30, 100, 100, 15, 30, 50, 60, 10, 30]
+larguras = [10, 120, 30, 130, 30, 40, 80, 45, 20, 20, 20, 20, 20, 20, 20, 25, 25]
+
 for col, largura in zip(cols, larguras):
     tree.heading(col, text=col)
     tree.column(col, anchor="w", width=largura)
 
-tree.grid(row=1, column=0, columnspan=4, padx=10, pady=10, sticky='nsew')
 
-# Main loop
+
+
+tree.grid(row=1, column=0, columnspan=4, padx=10, pady=10, sticky='nsew')  # Grid com expansibilidade PARA MOSTRAR DADOS RECIBOS
+
+
+############################################################################ BOTAO DIREITO
+# Supondo que tree seja sua árvore já existente
+tree.bind("<Button-3>", on_right_click)  # Associando o clique direito
+
+# Ajustando a tela para que a árvore ocupe o restante da janela
+janela_principal.grid_rowconfigure(1, weight=1)
+janela_principal.grid_columnconfigure(0, weight=1)
+janela_principal.grid_columnconfigure(1, weight=1)
+
+# Criando a JANELINHA ao cliclar com o BOTAO DIREITO MOUSE
+menu_post_click = Menu(janela_principal, tearoff=0)
+menu_post_click.add_command(label="Impressão com DATA HOJE", command=gerar_recibo_padrao_data)
+menu_post_click.add_separator()  # Adiciona uma linha de separação
+menu_post_click.add_command(label="Imprimir PADRAO", command=gerar_recibo_padrao)
+menu_post_click.add_separator()  # Adiciona uma linha de separação
+menu_post_click.add_command(label="Impressão Simples", command=gerar_e_fechar)
+menu_post_click.add_separator()  # Adiciona uma linha de separação
+menu_post_click.add_command(label="Fechar", command=fechar_menu)
+
+
+# 
 janela_principal.mainloop()
