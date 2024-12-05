@@ -215,7 +215,7 @@ def buscar_recibos(event=None):
     conexao.close()  # Fecha a conexão com o banco
 
     if not dados:  # Se a consulta não retornar resultados
-        messagebox.showinfo("Resultado", "Nenhum Dado Encontrado.")
+        messagebox.showinfo("Resultado", "Nenhum Recibo Encontrado.")
         return  # Interrompe a função, não inserindo dados na árvore
 
     # Preenche a árvore com os dados retornados
@@ -257,12 +257,12 @@ def excluir_recibo():
         senha = senha_entry.get()  # Pega a senha digitada
         
         if senha != "55":
-            messagebox.showerror("Erro", "Senha incorreta! Exclusão cancelada.")
+            messagebox.showerror("Erro", "Senha Incorreta! Exclusão Cancelada.")
             senha_janela.destroy()  # Fecha a janela da senha
             return
         
         # Confirmar com o usuário antes de excluir
-        confirm = messagebox.askyesno("Confirmar Exclusão", f"Você tem Certeza que Deseja Excluir o Recibo com ID {id_recibo}?")
+        confirm = messagebox.askyesno("Confirmar Exclusão", f"Você Tem Certeza que Deseja Excluir o Recibo com ID {id_recibo}?")
         
         if confirm:
             try:
@@ -288,7 +288,7 @@ def excluir_recibo():
                 messagebox.showinfo("Sucesso", f"Recibo {id_recibo}, Excluído com Sucesso!")
             
             except mysql.connector.Error as err:
-                messagebox.showerror("Erro", f"Erro ao excluir recibo: {err}")
+                messagebox.showerror("Erro", f"Erro ao Excluir Recibo: {err}")
         
         senha_janela.destroy()  # Fecha a janela de senha após o processo de exclusão
 
@@ -307,7 +307,7 @@ import tkinter as tk
 from tkinter import messagebox
 import mysql.connector
 from datetime import datetime
-def abrir_janela_inclusao():
+def abrir_janela_inclusao(): # INCLUSAO DE RECIBO
     # Criando a janela de inclusão
     janela_inclusao = tk.Toplevel(janela_principal)
     janela_inclusao.title("INCLUIR Recibo MANUAL")
@@ -409,7 +409,7 @@ def abrir_janela_inclusao():
 ######################################################################### INCLUINDO RECIBO MANUAL ACIMA #################
 ###################################################################################################################################
 ################################ FUNÇÃO CALCULAR VALOR LIQUIDO = SOMA tudo - DESCONTO = VALOR LIQUIDO ##############################
-    def calcular_valor_liquido():
+    def calcular_valor_liquido(): 
         try:
             aluguel = float(campo_aluguel_inclusao.get())
             agua = float(campo_agua_inclusao.get() or 0)
@@ -426,7 +426,7 @@ def abrir_janela_inclusao():
 
             return valor_liquido
         except ValueError:
-            messagebox.showerror("Erro", "Por Favor, Insira Valores Numéricos válidos nos Campos de Valor.")
+            messagebox.showerror("Erro", "Por Favor, Insira Valores Numéricos Válidos nos Campos de Valor.")
             janela_inclusao.attributes('-topmost', True) 
             return 0
 
@@ -853,10 +853,10 @@ def fechar_janela(janela):
 
 #########################################################################
 # Função para abrir a janela de CADASTRO DE CLIENTES
-def abrir_janela_inclusao_cliente():
+def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
     janela_inclusao = tk.Toplevel(janela_principal)
     janela_inclusao.title("Cadastro de Cliente")
-    janela_inclusao.geometry("650x790+5+5")  # Aumentar a altura para caber mais campos
+    janela_inclusao.geometry("600x780+5+5")  # Aumentar a altura para caber mais campos
     janela_inclusao.resizable(False, False)
 
     # Garantir que a janela de inclusão fique na frente da janela principal
@@ -1453,7 +1453,7 @@ def editar_cliente(id_cliente):
     # Criar a janela de edição
     janela_edicao_cliente = tk.Toplevel()
     janela_edicao_cliente.title(f"Edição de Cliente {id_cliente}")
-    janela_edicao_cliente.geometry("500x810+5+5")  # Ajustando o tamanho da janela para acomodar todos os campos e botões
+    janela_edicao_cliente.geometry("480x800+5+5")  # Ajustando o tamanho da janela para acomodar todos os campos e botões
 
     # Criando as labels (descrições) e campos de edição (não inclui o campo de Data)
     labels = [
@@ -1554,14 +1554,14 @@ def editar_cliente(id_cliente):
 ######### BOTOES JANELA EDITAR CLIENTES
     # Botão Salvar com cor verde e texto branco
     btn_salvar = tk.Button(janela_edicao_cliente, text="Salvar (Enter)", command=salvar_edicao, bg="green", fg="white")
-    btn_salvar.grid(row=len(labels) - 1, column=0, padx=10, pady=10, sticky="e")  # Alinhado à direita
+    btn_salvar.grid(row=len(labels) - 1, column=1, padx=10, pady=10, sticky="e")  # Alinhado à direita
 
     # Binding para tecla Enter chamar a função salvar_edicao
     janela_edicao_cliente.bind('<Return>', lambda event: salvar_edicao())
 
     # Botão Fechar
     btn_fechar = tk.Button(janela_edicao_cliente, text="Fechar", command=janela_edicao_cliente.destroy, bg="gray", fg="white")
-    btn_fechar.grid(row=len(labels) - 1, column=1, padx=10, pady=10, sticky="w")  # Alinhado à esquerda
+    btn_fechar.grid(row=len(labels) - 1, column=0, padx=10, pady=10, sticky="w")  # Alinhado à esquerda
 
 
 
