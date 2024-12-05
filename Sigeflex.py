@@ -549,12 +549,12 @@ def editar_recibo():
         # Cria a janela de edição
         janela_editar = tk.Toplevel(janela_principal)
         janela_editar.title(f"EDITANDO RECIBO N° {id_recibo}")
-        janela_editar.geometry("420x560+5+5")  # Aumentando a altura da janela
+        janela_editar.geometry("410x510+5+5")  # Aumentando a altura da janela
         janela_editar.resizable(False, False)
 
         # Define os campos e os respectivos índices
         campos = [
-            ("NOME *", 1), ("CPF/CNPJ", 2), ("Endereco Completo", 3), ("Referente", 6), ("ALUGUEL *", 4),
+            ("NOME *", 1), ("CPF/CNPJ", 2), ("Endereco", 3), ("Referente", 6), ("ALUGUEL", 4),
             ("Água", 8), ("Luz", 9), ("Condomínio", 10), ("IPTU", 11),
             ("Internet", 12), ("Limpeza", 13), ("Outros", 14), ("DESCONTOS", 15), ("Observação", 16), ("Data de Emissão", 7),
         ]
@@ -602,7 +602,7 @@ def editar_recibo():
         # Função para calcular o VALOR_LIQUIDO
         def calcular_valor_liquido(valores):
             try:
-                aluguel = float(valores.get("ALUGUEL %", 0) or 0)
+                aluguel = float(valores.get("ALUGUEL", 0) or 0)
                 agua = float(valores.get("Água", 0) or 0)
                 luz = float(valores.get("Luz", 0) or 0)
                 condominio = float(valores.get("Condomínio", 0) or 0)
@@ -638,7 +638,7 @@ def editar_recibo():
             valores = {rotulo: entrada.get() for rotulo, entrada in entradas.items()}
 
             # Validações básicas
-            if not valores.get("NOME *", "").strip() or not valores.get("ALUGUEL *", "").strip():
+            if not valores.get("NOME *", "").strip() or not valores.get("ALUGUEL", "").strip():
                 messagebox.showwarning("Atenção", "Os campos NOME e ALUGUEL são Obrigatórios.")
                 janela_editar.attributes('-topmost', True)
                 return
@@ -672,7 +672,7 @@ def editar_recibo():
                     Internet = %s, Limpeza = %s, Outros = %s, DESCONTOS = %s, Observacao = %s, valor_liquido = %s
                     WHERE id_recibo = %s""",
                     (valores["NOME *"], valores.get("CPF/CNPJ", ""), valores.get("Endereco", ""),
-                     float(valores.get("ALUGUEL *", 0) or 0), valores.get("Referente", ""),
+                     float(valores.get("ALUGUEL", 0) or 0), valores.get("Referente", ""),
                      data_emissao, float(valores.get("Água", 0) or 0),
                      float(valores.get("Luz", 0) or 0), float(valores.get("Condomínio", 0) or 0),
                      float(valores.get("IPTU", 0) or 0), float(valores.get("Internet", 0) or 0),
@@ -1014,7 +1014,11 @@ from reportlab.lib import colors
 from datetime import datetime
 from tkinter import messagebox
 import os
-import os
+from num2words import num2words  # Importa a biblioteca para converter números em texto
+
+# Função para converter número para por extenso
+def numero_por_extenso(valor):
+    return num2words(valor, lang='pt_BR')
 
 # Função para gerar e atualizar o ID do recibo
 def obter_id_recibo():
@@ -1038,7 +1042,43 @@ def obter_id_recibo():
     
     return contador - 1  # Retorna o ID do recibo antes de incrementar
 
-# Função principal para gerar o PDF
+# FUNCAO PARA GERAR POR EXTENSO O VALOR DO ALUGUEL(VALOR PAGO)
+from num2words import num2words
+from decimal import Decimal, InvalidOperation
+
+# Função para formatar valor monetário em formato R$
+def formatar_valor(valor):
+    try:
+        # Tenta converter o valor para Decimal
+        valor_decimal = Decimal(valor)
+        return f"R$ {valor_decimal:,.2f}"  # Formatação monetária com duas casas decimais
+    except (ValueError, InvalidOperation, TypeError):
+        # Caso não seja um número válido, retorna "R$ 0.00"
+        return "R$ 0.00"
+
+# Função para formatar valor por extenso (em reais e centavos)
+def formatar_valor_por_extenso(valor):
+    """
+    Converte um valor numérico em reais para a forma por extenso em português.
+    Exemplo: 1505.62 -> "um mil, quinhentos e cinco reais e sessenta e dois centavos"
+    """
+    valor_int = int(valor)  # Parte inteira
+    valor_dec = round(valor - valor_int, 2)  # Parte decimal (centavos)
+
+    # Converte a parte inteira
+    valor_extenso_int = num2words(valor_int, lang='pt_BR')
+
+    # Converte a parte decimal (centavos)
+    if valor_dec > 0:
+        valor_extenso_dec = num2words(int(valor_dec * 100), lang='pt_BR')
+
+        # Corrigir a forma para "centavos" no final
+        valor_extenso_dec = f"{valor_extenso_dec} centavos"
+        return f"{valor_extenso_int} reais e {valor_extenso_dec}"
+    else:
+        return f"{valor_extenso_int} reais"
+
+# Função para gerar o PDF
 def gerar_pdf(cliente):
     try:
         print(f"Cliente selecionado: {cliente}")  # Depuração para ver os dados
@@ -1073,8 +1113,6 @@ def gerar_pdf(cliente):
             "referente": cliente[22]
         }
 
-        print(f"Campos do cliente: {campos_cliente}")  # Depuração do dicionário
-
         # A partir daqui, você pode acessar os dados do cliente normalmente
         nome = campos_cliente["nome"]
         cpfcnpj = campos_cliente["cpfcnpj"]
@@ -1107,57 +1145,43 @@ def gerar_pdf(cliente):
         # Criação do canvas para o PDF
         c = canvas.Canvas(pdf_filename, pagesize=letter)
 
-
-        # Função para desenhar o logo
-        def desenhar_logo(c, y_position):
-            c.drawImage("logo.png", 35, y_position, width=65, height=65)  # Ajuste a posição e tamanho do logo conforme necessário
-
-        # Função para desenhar os dados da empresa
-        def desenhar_dados_empresa(c, y_position, id):
-            x_position_empresa = 160  # Definido para começar um pouco à direita do logo (ajustável conforme necessário)
-            c.setFont("Helvetica", 12)
-            c.drawString(x_position_empresa, y_position, f"IMOBILIÁRIA LIDER   10.605.092/0001-97                         RECIBO N°{id}")
-            y_position -= 12
-            c.drawString(x_position_empresa, y_position, "marcelobeutler@gmail.com | (55) 9 8116 - 9772")
-            y_position -= 12
-            c.drawString(x_position_empresa, y_position, "Rua Tiradentes, 606 Centro  98995-000 PORTO XAVIER - RS")
-            y_position -= 12
-            c.drawString(x_position_empresa, y_position, "'IMÓVEL SÓ  COM O CORRETOR'")  # Slogan
-            y_position -= 12
-            y_position -= 14
-            return y_position
-        
-        # Função para desenhar os dados do recibo
+        # Função para desenhar os dados financeiros no PDF
         def desenhar_pessoa(c, y_position, id, operacao, pessoa_dados):
             c.setFont("Helvetica", 10)
-            texto = f"Recebemos de {operacao} {pessoa_dados[1]}, CPF/CNPJ: {pessoa_dados[3]}, Residente na {pessoa_dados[8]}, {pessoa_dados[9]}, {pessoa_dados[10]}, {pessoa_dados[11]}. O VALOR de: {formatar_valor(pessoa_dados[12])}, REFERENTE a: {pessoa_dados[22]}"
+    
+            # Converter o valor do ALUGUEL para float (caso ainda não seja)
+            try:
+                aluguel_valor = float(pessoa_dados[12])  # Garantir que o valor é numérico
+            except ValueError:
+                aluguel_valor = 0.0  # Caso o valor esteja inválido
 
+            # Convertendo o valor do aluguel para por extenso
+            aluguel_por_extenso = formatar_valor_por_extenso(aluguel_valor)
 
-            # Quebrar a mensagem se ela ultrapassar a largura da página (450px)
-            largura_maxima = 450  # Largura máxima antes de quebrar a linha
+            texto = f"Recebemos de {operacao} {pessoa_dados[1]}, CPF/CNPJ: {pessoa_dados[3]}, Residente na {pessoa_dados[8]}, {pessoa_dados[9]}, {pessoa_dados[10]}, {pessoa_dados[11]}. O VALOR de: R$ {pessoa_dados[12]}({aluguel_por_extenso}), REFERENTE: {pessoa_dados[22]}."
+
+            # Quebrar o texto se ultrapassar a largura
+            largura_maxima = 450
             palavras = texto.split(" ")
             linha_atual = ""
             linhas = []
 
             for palavra in palavras:
-                # Verifica se a largura da linha com a próxima palavra ultrapassa a largura máxima
                 if c.stringWidth(linha_atual + " " + palavra if linha_atual else palavra) <= largura_maxima:
                     linha_atual += " " + palavra if linha_atual else palavra
                 else:
-                    # Se ultrapassar, quebra a linha e começa uma nova
                     linhas.append(linha_atual)
                     linha_atual = palavra
 
-            # Adiciona a última linha que não foi adicionada ainda
             if linha_atual:
                 linhas.append(linha_atual)
 
-            # Desenhar as linhas no PDF
+            # Desenhando as linhas no PDF
             for linha in linhas:
                 c.drawString(50, y_position, linha)
-                y_position -= 12  # Ajusta a posição Y após o texto
+                y_position -= 12
 
-            # Desenhando os campos financeiros
+            # Campos financeiros
             campos_financeiros = [
                 ("ALUGUEL", pessoa_dados[12]),
                 ("Água", pessoa_dados[14]),
@@ -1168,46 +1192,30 @@ def gerar_pdf(cliente):
                 ("Limpeza", pessoa_dados[19]),
                 ("Outros", pessoa_dados[20]),
                 ("- DESCONTOS", pessoa_dados[21]),
-                ("Total Líquido", pessoa_dados[22])  # Ajuste o valor conforme necessário
+                ("Total Líquido", pessoa_dados[22])
             ]
 
-            y_position -= 10
+            y_position -= 12  # Um pequeno espaço antes de começar os valores
             for descricao, valor in campos_financeiros:
                 valor_formatado = formatar_valor(valor)
-                y_position -= 12
                 c.drawString(50, y_position, descricao)
-                c.drawString(450, y_position, valor_formatado)
+                c.drawString(450, y_position, valor_formatado)  # Ajustando a posição X para o valor
+                y_position -= 12  # Distância entre as linhas
 
-            y_position -= 10
-
-            # Formatar e desenhar a data
-            from datetime import datetime
+            y_position -= 10  # Distância final após os campos financeiros
 
             # Formatar e desenhar a data
             data_original = pessoa_dados[6]  # A data que vem da tabela 'pessoas'
-
-            # Verifica se a data está disponível e válida
             if data_original == "Não informado" or not data_original:
-    # Se a data não estiver informada, utiliza a data atual
                 data_formatada = datetime.now().strftime("%d/%m/%Y")
             else:
                 try:
                     if isinstance(data_original, str):
-            # Converte a string para o formato de data
                         data_original = datetime.strptime(data_original, "%Y-%m-%d")
-        # Formata a data para o formato "dd/mm/yyyy"
                     data_formatada = data_original.strftime("%d/%m/%Y")
                 except ValueError:
-        # Se ocorrer um erro na conversão, usa a data atual como fallback
                     data_formatada = datetime.now().strftime("%d/%m/%Y")
 
-
-
-
-
-
-
-            y_position -= 10
             c.drawString(50, y_position, f"Recebido Em: {data_formatada}                          IMOBILIARIA LIDER")
             y_position -= 30
 
@@ -1218,16 +1226,17 @@ def gerar_pdf(cliente):
 
         # Ajuste da posição inicial de Y para a primeira via
         y_position_inicial = 730
-
-        # Desenhar a primeira via
         desenhar_logo(c, y_position_inicial)  # Logo na primeira via
         y_position = desenhar_dados_empresa(c, y_position_inicial, id_recibo)  # Dados da empresa na primeira via
-        y_position = desenhar_pessoa(c, y_position, id_recibo, "Aluguel", cliente)  # Primeira via
+        y_position -= 10
+        desenhar_pessoa(c, y_position, id_recibo, "Aluguel", cliente)  # Primeira via
+              
 
-        # Ajuste a posição para a segunda via (um pouco abaixo da primeira via)
+        # Ajuste da posição para a segunda via
         y_position_inicial = 310  # Ajuste a posição para a segunda via
         desenhar_logo(c, y_position_inicial)  # Logo na segunda via
         y_position = desenhar_dados_empresa(c, y_position_inicial, id_recibo)  # Dados da empresa na segunda via
+        y_position -= 10
         desenhar_pessoa(c, y_position, id_recibo, "Aluguel", cliente)  # Segunda via
 
         # Salvar o PDF
@@ -1245,7 +1254,8 @@ def gerar_pdf(cliente):
 
 
 
-###################################################### PEGAR O X CLIENTE NA GRID DE CONSULTA
+
+###################################################### PEGAR O X CLIENTE NA GRID DE CONSULTA PARA GERAR O RECIBO DO CLIENTE
 # Função para testar com a interface gráfica
 def obter_cliente_selecionado():
     selected_item = tree.selection()  # Pega o item selecionado no Treeview
@@ -1286,7 +1296,7 @@ def abrir_janela_consulta_clientes():
     # Criando a janela de consulta, se ainda não foi criada
     janela_consulta = tk.Toplevel()  # Criando a janela de consulta
     janela_consulta.title("Consulta de Clientes")
-    janela_consulta.geometry("1400x900+5+5")
+    janela_consulta.geometry("1380x900+5+5")
    
 
     # Garantir que a janela sempre fique na frente
@@ -1310,7 +1320,7 @@ def abrir_janela_consulta_clientes():
 
     entry_nome_cliente = tk.Entry(janela_consulta)
     entry_nome_cliente.pack(side=tk.LEFT, padx=10, pady=10)
-    entry_nome_cliente.focus()
+    entry_nome_cliente.focus_set()
 
     def procurar_cliente():
         nome_cliente = entry_nome_cliente.get().strip()
@@ -1443,7 +1453,7 @@ def editar_cliente(id_cliente):
     # Criar a janela de edição
     janela_edicao_cliente = tk.Toplevel()
     janela_edicao_cliente.title(f"Edição de Cliente {id_cliente}")
-    janela_edicao_cliente.geometry("500x820+5+5")  # Ajustando o tamanho da janela para acomodar todos os campos e botões
+    janela_edicao_cliente.geometry("500x810+5+5")  # Ajustando o tamanho da janela para acomodar todos os campos e botões
 
     # Criando as labels (descrições) e campos de edição (não inclui o campo de Data)
     labels = [
@@ -1565,7 +1575,7 @@ def editar_cliente(id_cliente):
 ######################################################## EDITAR CLIENTE ACIMA
 
 
-###################################### GERANDO O PDF COM BOTAO DIREITO DO MOUSE MES = GERAR RECIBO DATA ATUAL
+###################################### GERANDO O PDF COM BOTAO DIREITO DO MOUSE - RECIBO SIMPLES
 from tkinter import ttk, Menu, messagebox
 import mysql.connector  # Importação correta para MySQL
 import os
@@ -1998,8 +2008,7 @@ def formatar_valor_por_extenso(valor):
 ##################################################################################################################
 ###################################################################################################################
 ################################### GERAR RECIBO PADRAO DATA HOJE - ATUAL
-def gerar_recibo_padrao_data():  # SELECIONA O ID_RECIBO E PREVISUALIZA O RECIBO PADRAO = FUNCAO GERAR_RECIBO_PADRAO_DATA
-    try:
+def gerar_recibo_padrao_data():  # SELECIONA O ID_RECIBO E PREVISUALIZA O RECIBO PADRAO = FUNCAO GERAR_RECIBO_PADRAO_ COMO BOTAO DIREITO MOUSE
         if not tree.selection():
             messagebox.showwarning("Selecione Um Recibo", "Por Favor, Selecione um Recibo para Prosseguir!")
             return  # Impede a execução do resto do código
@@ -2118,8 +2127,6 @@ def gerar_recibo_padrao_data():  # SELECIONA O ID_RECIBO E PREVISUALIZA O RECIBO
         messagebox.showinfo("Recibo Gerado", f"Recibo {id_recibo} , com DATA DE HOJE, Gerado com Sucesso!")
         os.startfile(nome_arquivo)
 
-    except Exception as e:
-        messagebox.showerror("Erro", f"Ocorreu um Erro: {str(e)}")
 
 ################################### RECIBO PADRAO DATA ATUAL ACIMA ##################################
 
@@ -2143,8 +2150,7 @@ def on_right_click(event):
 def gerar_e_fechar():
     gerar_mes()  # Chama a função para gerar o PDF
     menu_post_click.unpost()  # Fecha o menu de contexto
-################################################# USANDO O CLIC BOTAO DIREITO DO MOUSE ACIMA#################
-
+################################################# USANDO O IMPRESSAO DOS DADOS CLIENTES X RECIBO ACIMA ########################
 
 
 
@@ -2163,7 +2169,7 @@ def realizar_backup():
         os.system(comando_backup)
 
         # Exibe uma mensagem de sucesso
-        messagebox.showinfo("Backup Realizado com Sucesso", "Salvo na Pasta Backup(C:\Recibo\Backup), Recomendamos salvar em Midia Externa")
+        messagebox.showinfo("Backup Realizado com Sucesso", "Salvo na Pasta Backup(C:\\Recibo\\Backup), Recomendamos salvar em Midia Externa.")
         
     except Exception as e:
         # Se houver um erro, exibe uma mensagem de erro
@@ -2178,8 +2184,8 @@ def criar_janela_principal():
     janela_boas.resizable(False, False)
 
     ctk.CTkLabel(janela_boas, text="Seja Bem-Vindo! Esses são Sistemas Desenvolvidos pela GDI", font=("Arial", 16)).pack(pady=10)
-    ctk.CTkLabel(janela_boas, text="*** Agora em MYSQL, um Banco Muito Mais Robusto, e com Possibilidade também de Fazer Backup - Versão 2024.2***", font=("Arial", 12)).pack(pady=5)
-    ctk.CTkLabel(janela_boas, text="*** Caminho onde salva o Backup = C\SIGEFLEX\BACKUP ***", font=("Arial", 12)).pack(pady=5)
+    ctk.CTkLabel(janela_boas, text="*** Agora em MYSQL, um Banco de Dados, Muito Mais Robusto, e com Possibilidade também de Fazer Backup - Versão 2024.2***", font=("Arial", 12)).pack(pady=5)
+    ctk.CTkLabel(janela_boas, text="*** Caminho onde salva o Backup = C\\SIGEFLEX\\BACKUP ***", font=("Arial", 12)).pack(pady=5)
     ctk.CTkLabel(janela_boas, text="DÚVIDAS: (54) 9 9104-1029", font=("Arial", 16)).pack(pady=10)
 
     # Botão para realizar o backup
@@ -2397,7 +2403,7 @@ menu_post_click = Menu(janela_principal, tearoff=0)
 menu_post_click.add_command(label="Impressão PADRAO", command=gerar_recibo_padrao)
 
 menu_post_click.add_separator()  # Adiciona uma linha de separação
-menu_post_click.add_command(label="Impressão com DATA HOJE", command=gerar_recibo_padrao_data)
+menu_post_click.add_command(label="REIMPRESSAO com DATA de HOJE", command=gerar_recibo_padrao_data)
 
 
 menu_post_click.add_separator()  # Adiciona uma linha de separação
