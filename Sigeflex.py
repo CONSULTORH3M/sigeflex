@@ -1301,7 +1301,9 @@ def abrir_janela_consulta_clientes():
     # Criando a janela de consulta
     janela_consulta = tk.Toplevel()
     janela_consulta.title("Consulta de Clientes")
-    janela_consulta.geometry("1380x880+5+5")
+    janela_consulta.geometry("1380x850+5+5")
+    # Define a janela como fullscreen
+    janela_consulta.attributes('-fullscreen', True)
     
     cols = ("Codigo", "Nome", "FANTASIA", "CPFCNPJ", "Telefone", "Celular", "CONTATO", "E-mail", "Endereco", "Nº", "Bairro", "Cidade", "ALUGUEL", "VLR_PAGO", "AGUA", "LUZ", "CONDOMINIO", "IPTU", "INTERNET", "LIMPEZA", "OUTROS", "Descontos", "Referente")
     tree = ttk.Treeview(janela_consulta, columns=cols, show="headings")
