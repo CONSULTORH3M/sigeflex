@@ -1164,14 +1164,11 @@ def gerar_Rel_Cliente():
     except Exception as e:
         messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
 
+# RELATORIO DE TODOS OS CLIENTES ACIMA
 
+# OPÇOES DO SISTEMA
 def opcoes_sistema():
     messagebox.showinfo("Em Desenvolvimento", "Em Desenvolvimento - Aguarde!")    
-
-######################### VAMOS COLOCAR AQUI OS RELATORIOS AS FUNÇOES DE CADA UM ACIMA
-
-
-
 
 
 ########################################################################################################################################################
@@ -1290,7 +1287,7 @@ def fechar_janela(janela):
 def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
     janela_inclusao = tk.Toplevel(janela_principal)
     janela_inclusao.title("Cadastro de Cliente")
-    janela_inclusao.geometry("600x780+5+5")  # Aumentar a altura para caber mais campos
+    janela_inclusao.geometry("600x750+5+5")  # Aumentar a altura para caber mais campos
     janela_inclusao.resizable(False, False)
 
     # Garantir que a janela de inclusão fique na frente da janela principal
@@ -1374,47 +1371,47 @@ def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
     campo_aluguel_inclusao = tk.Entry(janela_inclusao, width=20, bg="lightblue", fg="black")
     campo_aluguel_inclusao.grid(row=13, column=1, padx=10, pady=5)
 
-    tk.Label(janela_inclusao, text="Água:").grid(row=14, column=0, padx=10, pady=5, sticky='w')
+    tk.Label(janela_inclusao, text="Água:").grid(row=14, column=0, padx=10, pady=2, sticky='w')
     global campo_agua_inclusao
     campo_agua_inclusao = tk.Entry(janela_inclusao, width=15)
     campo_agua_inclusao.grid(row=14, column=1, padx=10, pady=5)
 
-    tk.Label(janela_inclusao, text="Luz:").grid(row=15, column=0, padx=10, pady=5, sticky='w')
+    tk.Label(janela_inclusao, text="Luz:").grid(row=15, column=0, padx=10, pady=2, sticky='w')
     global campo_luz_inclusao
     campo_luz_inclusao = tk.Entry(janela_inclusao, width=15)
     campo_luz_inclusao.grid(row=15, column=1, padx=10, pady=5)
 
-    tk.Label(janela_inclusao, text="Condomínio:").grid(row=16, column=0, padx=10, pady=5, sticky='w')
+    tk.Label(janela_inclusao, text="Condomínio:").grid(row=16, column=0, padx=10, pady=2, sticky='w')
     global campo_condominio_inclusao
     campo_condominio_inclusao = tk.Entry(janela_inclusao, width=15)
     campo_condominio_inclusao.grid(row=16, column=1, padx=10, pady=5)
 
-    tk.Label(janela_inclusao, text="IPTU:").grid(row=17, column=0, padx=10, pady=5, sticky='w')
+    tk.Label(janela_inclusao, text="IPTU:").grid(row=17, column=0, padx=10, pady=2, sticky='w')
     global campo_iptu_inclusao
     campo_iptu_inclusao = tk.Entry(janela_inclusao, width=15)
     campo_iptu_inclusao.grid(row=17, column=1, padx=10, pady=5)
 
-    tk.Label(janela_inclusao, text="Internet:").grid(row=18, column=0, padx=10, pady=5, sticky='w')
+    tk.Label(janela_inclusao, text="Internet:").grid(row=18, column=0, padx=10, pady=2, sticky='w')
     global campo_internet_inclusao
     campo_internet_inclusao = tk.Entry(janela_inclusao, width=15)
     campo_internet_inclusao.grid(row=18, column=1, padx=10, pady=5)
 
-    tk.Label(janela_inclusao, text="Limpeza:").grid(row=19, column=0, padx=10, pady=5, sticky='w')
+    tk.Label(janela_inclusao, text="Limpeza:").grid(row=19, column=0, padx=8, pady=2, sticky='w')
     global campo_limpeza_inclusao
     campo_limpeza_inclusao = tk.Entry(janela_inclusao, width=15)
     campo_limpeza_inclusao.grid(row=19, column=1, padx=10, pady=5)
 
-    tk.Label(janela_inclusao, text="OUTROS:").grid(row=20, column=0, padx=10, pady=5, sticky='w')
+    tk.Label(janela_inclusao, text="OUTROS:").grid(row=20, column=0, padx=10, pady=2, sticky='w')
     global campo_outros_inclusao
     campo_outros_inclusao = tk.Entry(janela_inclusao, width=15)
     campo_outros_inclusao.grid(row=20, column=1, padx=10, pady=5)
 
-    tk.Label(janela_inclusao, text="Descontos:").grid(row=21, column=0, padx=10, pady=5, sticky='w')
+    tk.Label(janela_inclusao, text="Descontos:").grid(row=21, column=0, padx=10, pady=2, sticky='w')
     global campo_descontos_inclusao
     campo_descontos_inclusao = tk.Entry(janela_inclusao, width=15)
     campo_descontos_inclusao.grid(row=21, column=1, padx=10, pady=5)
 
-    tk.Label(janela_inclusao, text="Referente:").grid(row=22, column=0, padx=10, pady=5, sticky='w')
+    tk.Label(janela_inclusao, text="Referente:").grid(row=22, column=0, padx=10, pady=2, sticky='w')
     global campo_referente_inclusao
     campo_referente_inclusao = tk.Entry(janela_inclusao, width=30)
     campo_referente_inclusao.grid(row=22, column=1, padx=10, pady=5)
@@ -1424,7 +1421,6 @@ def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
     campo_data_inclusao = tk.Entry(janela_inclusao, width=12)
     campo_data_inclusao.grid(row=23, column=1, padx=10, pady=5)
     campo_data_inclusao.insert(0, data)
-
     campo_data_inclusao.grid_forget()
 
     campo_nome_inclusao.focus_set()
@@ -1432,7 +1428,7 @@ def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
 ########### BOTOES INCLUIR CLIENTES
     # Botão para salvar as informações
     btn_incluir = tk.Button(janela_inclusao, text="SALVAR (Enter)", command=salvar_cliente, bg="green", fg="white", width=15)
-    btn_incluir.grid(row=24, column=1, padx=10, pady=20)
+    btn_incluir.grid(row=24, column=1, padx=5, pady=15)
 
     def on_enter(event):
         salvar_cliente()
@@ -1442,7 +1438,7 @@ def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
     janela_inclusao.bind('<Return>', on_enter)
     
     btn_fechar = tk.Button(janela_inclusao, text="Fechar", command=janela_inclusao.destroy, bg="gray", fg="white", width=15)
-    btn_fechar.grid(row=24, column=0, padx=10, pady=20)
+    btn_fechar.grid(row=24, column=0, padx=5, pady=15)
 
 ######################################################################## CADASTRO DE CLIENTE ACIMA #######################
 
@@ -1929,7 +1925,7 @@ def abrir_janela_consulta_clientes():
         btn_salvar = tk.Button(janela_edicao_cliente, text="Salvar (Enter)", command=salvar_edicao, bg="green", fg="white")
         btn_salvar.grid(row=len(labels) - 1, column=1, padx=10, pady=10, sticky="e")  # Alinhado à direita
 
-    # Binding para tecla Enter chamar a função salvar_edicao
+# Binding para tecla Enter chamar a função salvar_edicao
         janela_edicao_cliente.bind('<Return>', lambda event: salvar_edicao())
 
     # Botão Fechar
@@ -1950,15 +1946,18 @@ def abrir_janela_consulta_clientes():
     btn_procurar = tk.Button(janela_consulta, text="PROCURAR (Enter)", command=procurar_cliente, bg="orange", fg="black")
     btn_procurar.pack(side=tk.LEFT, padx=10, pady=10)
 
-    # Função para exibir a janela de sucesso
+# Binding para tecla Enter chamar a função procurar_cliente
+    janela_consulta.bind('<Return>', lambda event: procurar_cliente())
+
+# Função para exibir a janela de sucesso
     def exibir_mensagem_sucesso():
         messagebox.showinfo("Cliente Atualizado", "Cliente Atualizado com Sucesso!")
-
         janela_consulta.after(100, lambda: janela_consulta.lift())
 
-    # Botões para a Janela de Consulta de Clientes
+# Botões para a Janela de Consulta de Clientes
     btn_incluir_cliente = tk.Button(janela_consulta, text="INCLUIR", command=abrir_janela_inclusao_cliente, bg="green", fg="white")
     btn_incluir_cliente.pack(padx=10, pady=10)
+
 
     
     btn_editar = tk.Button(janela_consulta, text="EDITAR", command=editar_cliente, bg="blue", fg="white")
