@@ -804,7 +804,7 @@ def gerar_relatorio_filtrado():
         dados_recibos = buscar_recibos_por_data(data_inicio_convertida, data_fim_convertida)
         if not dados_recibos:
             messagebox.showwarning("Atenção", f"Não há Recibos para o Período de {data_inicio} a {data_fim}.")
-            janela_principal.quit()  # Fecha a janela após o erro
+            
             return
 
         # Gerar o arquivo PDF
@@ -871,30 +871,20 @@ def gerar_relatorio_filtrado():
 
     except Exception as e:
         messagebox.showerror("Erro", f"Erro ao gerar o relatório: {str(e)}")
-        
+
+# REALTORIO POR DATA ACIMA        
 
 
-
-
-
-
-
-        
-
-
-
-
-
-# RELATORIO DE TODOS OS RECIBOS QUE TEM NO SISTEMA, GERAL TOTAL
-import mysql.connector
+# RELATORIO DE TODOS OS CLIENTES NO SISTEMA
 from mysql.connector import Error
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from tkinter import messagebox
 import os
 import sys
+import mysql.connector
 
-def gerar_Rel_Total():
+def rel_Clientes():
     try:
         # Conectar ao banco de dados MySQL
         conexao = mysql.connector.connect(
@@ -907,20 +897,20 @@ def gerar_Rel_Total():
         if conexao.is_connected():
             cursor = conexao.cursor()
 
-            # Buscar todos os dados da tabela 'recibos'
-            cursor.execute("SELECT * FROM recibos")
-            dados_recibos = cursor.fetchall()
+            # Buscar todos os dados da tabela 'pessoas' (ajustado para a tabela de clientes)
+            cursor.execute("SELECT id, nome, endereco, telefone1, email, aluguel, referente FROM pessoas")
+            dados_clientes = cursor.fetchall()
 
             # Fechar a conexão
             cursor.close()
             conexao.close()
 
-            if not dados_recibos:
-                messagebox.showwarning("Atenção", "Nenhum Recibo encontrado para gerar o Relatório.")
+            if not dados_clientes:
+                messagebox.showwarning("Atenção", "Nenhum Cliente encontrado para gerar o Relatório.")
                 return
 
             # Criar o arquivo PDF
-            nome_arquivo = os.path.join(os.getcwd(), "Relatorio_TODOS_Recibos.pdf")  # Caminho absoluto
+            nome_arquivo = os.path.join(os.getcwd(), "Relatorio_Clientes.pdf")  # Caminho absoluto
 
             # Verifique se o diretório de trabalho tem permissão para salvar o arquivo
             if not os.access(os.getcwd(), os.W_OK):
@@ -932,99 +922,59 @@ def gerar_Rel_Total():
             
             # Adicionar um título
             c.setFont("Helvetica-Bold", 16)
-            c.drawString(150, altura - 40, "Relatorio GERAL de Todos os Recibos")
+            c.drawString(150, altura - 40, "Relatório de Dados Cadastrais dos Clientes")
 
-            # Adicionar os dados dos recibos no PDF
+            # Adicionar os dados dos clientes no PDF
             c.setFont("Helvetica", 8)
             y_position = altura - 60  # Posição inicial para o texto
             
             # Cabeçalho da tabela
-            c.drawString(25, y_position, "NUMERO")
-            c.drawString(80, y_position, "Nome")
-            c.drawString(230, y_position, "CPF/CNPJ")
-            c.drawString(300, y_position, "Valor Pago")
-            c.drawString(360, y_position, "Desconto")
-            c.drawString(420, y_position, "Data Emissão")
-            c.drawString(510, y_position, "Referente")
+            c.drawString(15, y_position, "ID")
+            c.drawString(30, y_position, "Nome")
+            c.drawString(160, y_position, "Endereço")
+            c.drawString(320, y_position, "Telefone")
+            c.drawString(390, y_position, "Email")
+            c.drawString(500, y_position, "Aluguel")
+            c.drawString(540, y_position, "Referente")
 
             y_position -= 20  # Espaço após o cabeçalho
 
-            # Variável para acumular o total de "Valor Pago"
-            total_pago = 0.0
-
-            # Atualize o número de colunas esperadas
-            colunas = [
-                'id', 'nome', 'cpf_cnpj', 'endereco', 'valor_pago', 'desconto', 'referente', 'data_emissao',
-                'campo_9', 'campo_10', 'campo_11', 'campo_12', 'campo_13', 'campo_14', 'campo_15', 'campo_16',
-                'observacao', 'campo_18', 'campo_19', 'campo_20'
-            ]
-            
             # Iterar sobre os dados e adicionar no PDF
-            for dado in dados_recibos:
-                print(f"Dados recebidos: {dado}")  # Depuração para ver o que está sendo retornado
-                
-                # Verifique se o número de colunas é o esperado (20 campos)
-                if len(dado) != len(colunas):
-                    print(f"Erro: Esperado {len(colunas)} campos, mas encontrado {len(dado)} campos. Recebido: {dado}")
-                    continue  # Pule este recibo se o número de campos for incorreto
+            for dado in dados_clientes:
+                id_cliente, nome, endereco, telefone1, email, aluguel, referente = dado
 
-                # Crie um dicionário com os dados
-                recibo = dict(zip(colunas, dado))  # Mapeia os dados para as colunas
-                print(f"Recibo processado: {recibo}")  # Exemplo de como acessar os dados
-
-                # Acessando os campos do recibo diretamente pelo dicionário
-                numero = recibo['id']
-                nome = recibo['nome']
-                cpf_cnpj = recibo['cpf_cnpj']
-                valor_pago = recibo['valor_pago']
-                desconto = recibo['desconto']
-                data_emissao = recibo['data_emissao']
-                referente = recibo['referente']
-
-                # Verifique se o valor_pago e desconto são válidos e converta-os para float
-                try:
-                    valor_pago = float(valor_pago) if valor_pago is not None and valor_pago != '' else 0.0
-                    desconto = float(desconto) if desconto is not None and desconto != '' else 0.0
-                except ValueError:
-                    print(f"Valor inválido para 'Valor Pago' ou 'Desconto': {valor_pago}, {desconto}")
-                    valor_pago = desconto = 0.0  # Se não for um número válido, atribui 0.0
-
-                # Formatar os valores para a apresentação
-                valor_pago_formatado = f"R$ {valor_pago:,.2f}"
-                desconto_formatado = f"R$ {desconto:,.2f}"
+                # Tratamento para valores None (nulos)
+                nome = nome if nome is not None else ""
+                endereco = endereco if endereco is not None else ""
+                telefone1 = telefone1 if telefone1 is not None else ""
+                email = email if email is not None else ""
+                aluguel = aluguel if aluguel is not None else ""
+                referente = referente if referente is not None else ""
 
                 # Escrever os dados no PDF
-                c.drawString(25, y_position, str(numero))  # Número do recibo
-                c.drawString(80, y_position, nome)  # Nome
-                c.drawString(230, y_position, cpf_cnpj)  # CPF/CNPJ
-                c.drawString(300, y_position, valor_pago_formatado)  # Valor Pago
-                c.drawString(370, y_position, desconto_formatado)  # Desconto
-                c.drawString(440, y_position, str(data_emissao))  # Data de Emissão
-                c.drawString(510, y_position, referente)  # Referente
+                c.drawString(15, y_position, str(id_cliente))  # ID
+                c.drawString(30, y_position, nome)  # Nome
+                c.drawString(160, y_position, endereco)  # Endereço
+                c.drawString(320, y_position, telefone1)  # Telefone
+                c.drawString(390, y_position, email)  # Email
+                c.drawString(500, y_position, str(aluguel))  # Aluguel
+                c.drawString(540, y_position, referente)  # Referente
                 y_position -= 20  # Desce para a próxima linha
 
-                # Acumula o valor pago
-                total_pago += valor_pago
-                
                 # Se estiver chegando no final da página, cria uma nova
                 if y_position < 50:
                     c.showPage()  # Cria uma nova página
                     c.setFont("Helvetica", 8)
                     y_position = altura - 40  # Reseta a posição Y para o topo
                     # Recria o cabeçalho da tabela na nova página
-                    c.drawString(25, y_position, "NUMERO")
-                    c.drawString(80, y_position, "Nome")
-                    c.drawString(230, y_position, "CPF/CNPJ")
-                    c.drawString(300, y_position, "Valor Pago")
-                    c.drawString(360, y_position, "Desconto")
-                    c.drawString(420, y_position, "Data Emissão")
-                    c.drawString(510, y_position, "Referente")
+                    c.drawString(15, y_position, "ID")
+                    c.drawString(30, y_position, "Nome")
+                    c.drawString(160, y_position, "Endereço")
+                    c.drawString(320, y_position, "Telefone")
+                    c.drawString(390, y_position, "Email")
+                    c.drawString(500, y_position, "Aluguel")
+                    c.drawString(540, y_position, "Referente")
                     y_position -= 20  # Espaço após o cabeçalho
-
-            # Desenha o totalizador de "Valor Pago"
-            y_position -= 20  # Ajusta a posição para o totalizador
-            total_pago_formatado = f"Total Recebido: R$ {total_pago:,.2f}"
-            c.drawString(300, y_position, total_pago_formatado)  # Desenha o total pago
 
             # Tenta salvar o PDF e verifica se ocorreu algum erro
             try:
@@ -1042,6 +992,11 @@ def gerar_Rel_Total():
 
     except Exception as e:
         messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
+
+
+
+   
+# RELATORIOS DADOS CLIENTES ACIMA
 
 
 # FUNCAO NOVA GERAR RECIBOS DO X CLIENTE APENAS OU QUBERAR POR CLIENTE
@@ -2536,8 +2491,7 @@ def gerar_recibo_padrao_data():  # SELECIONA O ID_RECIBO E PREVISUALIZA O RECIBO
 
             y_position -= 20
 
-            # Nome do Recebedor e DATA
-
+            
             #c.drawString(100, 475, f"Data Emissao: {data_atual}")  # Substituindo pela data atual
             c.drawString(50, y_position, f"Recebido Em: {data_atual}                          IMOBILIARIA LIDER")
             y_position -= 30
@@ -2746,7 +2700,7 @@ menu_relatorios.add_command(label="Relatório por Data", command=gerar_relatorio
 menu_relatorios.add_separator()
 menu_relatorios.add_command(label="Relatório Por Cliente", command=gerar_Rel_Cliente)
 menu_relatorios.add_separator()
-menu_relatorios.add_command(label="Relatório Geral", command=gerar_Rel_Total)
+menu_relatorios.add_command(label="Relatório Clientes", command=rel_Clientes)
   # Se quiser uma linha separadora
 
 # Menu Opcoes
