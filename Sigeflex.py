@@ -857,7 +857,7 @@ def fechar_janela(janela):
 def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
     janela_inclusao = tk.Toplevel(janela_principal)
     janela_inclusao.title("Cadastro de Cliente")
-    janela_inclusao.geometry("600x820+5+5")  # Aumentar a altura para caber mais campos
+    janela_inclusao.geometry("600x780+5+5")  # Aumentar a altura para caber mais campos
     janela_inclusao.resizable(False, False)
 
     # Garantir que a janela de inclusão fique na frente da janela principal
@@ -867,7 +867,7 @@ def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
     # Garantir que as colunas e linhas da grid se ajustem ao tamanho da janela
     janela_inclusao.grid_columnconfigure(0, weight=1, minsize=100)
     janela_inclusao.grid_columnconfigure(1, weight=3, minsize=200)
-    janela_inclusao.grid_rowconfigure(22, weight=1, minsize=50)  # Ajuste para o botão final
+    janela_inclusao.grid_rowconfigure(22, weight=1, minsize=20)  # Ajuste para o botão final
 
     # Definindo os campos de entrada
     tk.Label(janela_inclusao, text="NOME:").grid(row=0, column=0, padx=10, pady=5, sticky='w')
@@ -1301,7 +1301,7 @@ def abrir_janela_consulta_clientes():
     # Criando a janela de consulta
     janela_consulta = tk.Toplevel()
     janela_consulta.title("Consulta de Clientes")
-    janela_consulta.geometry("1380x900+5+5")
+    janela_consulta.geometry("1380x880+5+5")
     
     cols = ("Codigo", "Nome", "FANTASIA", "CPFCNPJ", "Telefone", "Celular", "CONTATO", "E-mail", "Endereco", "Nº", "Bairro", "Cidade", "ALUGUEL", "VLR_PAGO", "AGUA", "LUZ", "CONDOMINIO", "IPTU", "INTERNET", "LIMPEZA", "OUTROS", "Descontos", "Referente")
     tree = ttk.Treeview(janela_consulta, columns=cols, show="headings")
