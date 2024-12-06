@@ -723,23 +723,501 @@ def on_right_click(event):
 ####################################################################### EDITAR ACIMA #################################################################
 
 
-######################### VAMOS COLOCAR AQUI OS RELATORIOS AS FUNÇOES DE CADA UM
+######################### RELATORIO DE RECIBOS POR DATA
 import tkinter as tk
+from tkinter import simpledialog, messagebox
+from datetime import datetime
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+import mysql.connector
+from mysql.connector import Error
+import os
+import sys
+
+# Função para buscar recibos por data
+def buscar_recibos_por_data(data_inicio, data_fim):
+    try:
+        conexao = mysql.connector.connect(
+            host='localhost',
+            database='dados',
+            user='root',
+            password='mysql147'
+        )
+        if conexao.is_connected():
+            cursor = conexao.cursor()
+            query = """
+                SELECT * FROM recibos
+                WHERE dataEmissao BETWEEN %s AND %s
+                ORDER BY dataEmissao
+            """
+            cursor.execute(query, (data_inicio, data_fim))
+            dados_recibos = cursor.fetchall()
+            cursor.close()
+            conexao.close()
+            return dados_recibos
+    except Error as e:
+        print(f"Erro ao consultar o Banco de Dados: {e}")
+        return []
+    
+from datetime import datetime, date
+# Função para converter data de 'YYYY-MM-DD' para 'DD/MM/YYYY'
+def formatar_data_para_pdf(data):
+    try:
+        if isinstance(data, date):
+            data = data.strftime("%Y-%m-%d")
+        data_formatada = datetime.strptime(data, "%Y-%m-%d").strftime("%d/%m/%Y")
+        return data_formatada
+    except ValueError:
+        return data
+
+# Função para gerar o relatório filtrado
+def gerar_relatorio_filtrado():
+    try:
+        # Criando a janela principal
+        janela_principal = tk.Tk()
+        janela_principal.withdraw()  # Ocultando a janela principal
+
+        # Solicitar a data de início
+        data_inicio = simpledialog.askstring("Data Inicio", "(ANO-MES-DIA):", parent=janela_principal)
+        if not data_inicio:
+            messagebox.showwarning("Atenção", "Data inicial não informada!")
+            janela_principal.quit()  # Fecha a janela após o erro
+            return
+
+        # Criação do campo de entrada para a data final
+        data_fim = simpledialog.askstring("Data Final", "(ANO-MES-DIA):", parent=janela_principal)
+        if not data_fim:
+            messagebox.showwarning("Atenção", "Data final não informada!")
+            janela_principal.quit()  # Fecha a janela após o erro
+            return
+
+        # Converter as datas para o formato esperado pelo banco de dados
+        try:
+            data_inicio_convertida = datetime.strptime(data_inicio, "%Y-%m-%d").strftime("%Y-%m-%d")
+            data_fim_convertida = datetime.strptime(data_fim, "%Y-%m-%d").strftime("%Y-%m-%d")
+        except ValueError:
+            messagebox.showerror("Erro", "Formato de data inválido. Use o formato 'YYYY-MM-DD'.")
+            janela_principal.quit()  # Fecha a janela após o erro
+            return
+
+        # Buscar os dados do banco
+        dados_recibos = buscar_recibos_por_data(data_inicio_convertida, data_fim_convertida)
+        if not dados_recibos:
+            messagebox.showwarning("Atenção", f"Não há Recibos para o Período de {data_inicio} a {data_fim}.")
+            janela_principal.quit()  # Fecha a janela após o erro
+            return
+
+        # Gerar o arquivo PDF
+        nome_arquivo = "Relatorio_Periodo.pdf"
+        c = canvas.Canvas(nome_arquivo, pagesize=letter)
+        largura, altura = letter
+
+        # Título do relatório
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(100, altura - 40, f"Relatório de Recibos do Período - {data_inicio} a {data_fim}")
+
+        # Cabeçalho da tabela
+        c.setFont("Helvetica", 10)
+        y_position = altura - 60
+        c.drawString(25, y_position, "Numero")
+        c.drawString(65, y_position, "Nome")
+        c.drawString(210, y_position, "CPF/CNPJ")
+        c.drawString(300, y_position, "Valor")
+        c.drawString(370, y_position, "DESCONTOS")
+        c.drawString(440, y_position, "Data Emissão")
+        c.drawString(510, y_position, "Referente")
+        y_position -= 20
+
+        # Preencher dados dos recibos
+        for dado in dados_recibos:
+            c.drawString(30, y_position, str(dado[0]))  # Número do recibo
+            c.drawString(65, y_position, dado[1])  # Nome
+            c.drawString(210, y_position, dado[2])  # CPF/CNPJ
+            c.drawString(300, y_position, f"R$ {dado[4]:.2f}")  # Valor
+            c.drawString(370, y_position, f"R$ {dado[5]:.2f}")  # Desconto
+
+            data_emissao_formatada = formatar_data_para_pdf(dado[7])
+            c.drawString(440, y_position, data_emissao_formatada)  # Data de Emissão
+            c.drawString(510, y_position, dado[6])  # Referente
+            y_position -= 20
+
+            # Criar nova página se necessário
+            if y_position < 50:
+                c.showPage()
+                y_position = altura - 40
+                c.setFont("Helvetica", 10)
+                c.drawString(30, y_position, "Número Recibo")
+                c.drawString(65, y_position, "Nome")
+                c.drawString(210, y_position, "CNPJ")
+                c.drawString(300, y_position, "Valor")
+                c.drawString(370, y_position, "Desconto")
+                c.drawString(440, y_position, "Data Emissão")
+                c.drawString(510, y_position, "Referente")
+                y_position -= 20
+
+        # Salvar o PDF
+        c.save()
+
+        # Abrir o arquivo PDF
+        if sys.platform == "win32":
+            os.startfile(nome_arquivo)
+        elif sys.platform == "darwin":
+            os.system(f"open {nome_arquivo}")
+        else:
+            os.system(f"xdg-open {nome_arquivo}")
+
+        messagebox.showinfo("Sucesso", f"Relatório gerado com sucesso! Arquivo salvo como {nome_arquivo}")
+        
+
+    except Exception as e:
+        messagebox.showerror("Erro", f"Erro ao gerar o relatório: {str(e)}")
+        
+
+
+
+
+
+
+
+        
+
+
+
+
+
+# RELATORIO DE TODOS OS RECIBOS QUE TEM NO SISTEMA, GERAL TOTAL
+import mysql.connector
+from mysql.connector import Error
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
 from tkinter import messagebox
+import os
+import sys
 
-def relatorio_por_data():
-    messagebox.showinfo("Em Desenvolvimento", "Em Desenvolvimento - Aguarde!")
+def gerar_Rel_Total():
+    try:
+        # Conectar ao banco de dados MySQL
+        conexao = mysql.connector.connect(
+            host='localhost',           # Endereço do servidor MySQL (pode ser 'localhost' ou IP do servidor)
+            database='dados',           # Nome do banco de dados
+            user='root',                # Seu usuário do MySQL
+            password='mysql147'         # Sua senha do MySQL
+        )
 
-def relatorio_geral():
-    messagebox.showinfo("Em Desenvolvimento", "Em Desenvolvimento - Aguarde!")
+        if conexao.is_connected():
+            cursor = conexao.cursor()
 
-def imprimir_recibo_selecionado():
-    messagebox.showinfo("Em Desenvolvimento", "Em Desenvolvimento - Aguarde!")
+            # Buscar todos os dados da tabela 'recibos'
+            cursor.execute("SELECT * FROM recibos")
+            dados_recibos = cursor.fetchall()
+
+            # Fechar a conexão
+            cursor.close()
+            conexao.close()
+
+            if not dados_recibos:
+                messagebox.showwarning("Atenção", "Nenhum Recibo encontrado para gerar o Relatório.")
+                return
+
+            # Criar o arquivo PDF
+            nome_arquivo = os.path.join(os.getcwd(), "Relatorio_TODOS_Recibos.pdf")  # Caminho absoluto
+
+            # Verifique se o diretório de trabalho tem permissão para salvar o arquivo
+            if not os.access(os.getcwd(), os.W_OK):
+                messagebox.showerror("Erro", "Permissão de escrita no diretório não encontrada.")
+                return
+            
+            c = canvas.Canvas(nome_arquivo, pagesize=letter)
+            largura, altura = letter
+            
+            # Adicionar um título
+            c.setFont("Helvetica-Bold", 16)
+            c.drawString(150, altura - 40, "Relatorio GERAL de Todos os Recibos")
+
+            # Adicionar os dados dos recibos no PDF
+            c.setFont("Helvetica", 8)
+            y_position = altura - 60  # Posição inicial para o texto
+            
+            # Cabeçalho da tabela
+            c.drawString(25, y_position, "NUMERO")
+            c.drawString(80, y_position, "Nome")
+            c.drawString(230, y_position, "CPF/CNPJ")
+            c.drawString(300, y_position, "Valor Pago")
+            c.drawString(360, y_position, "Desconto")
+            c.drawString(420, y_position, "Data Emissão")
+            c.drawString(510, y_position, "Referente")
+
+            y_position -= 20  # Espaço após o cabeçalho
+
+            # Variável para acumular o total de "Valor Pago"
+            total_pago = 0.0
+
+            # Atualize o número de colunas esperadas
+            colunas = [
+                'id', 'nome', 'cpf_cnpj', 'endereco', 'valor_pago', 'desconto', 'referente', 'data_emissao',
+                'campo_9', 'campo_10', 'campo_11', 'campo_12', 'campo_13', 'campo_14', 'campo_15', 'campo_16',
+                'observacao', 'campo_18', 'campo_19', 'campo_20'
+            ]
+            
+            # Iterar sobre os dados e adicionar no PDF
+            for dado in dados_recibos:
+                print(f"Dados recebidos: {dado}")  # Depuração para ver o que está sendo retornado
+                
+                # Verifique se o número de colunas é o esperado (20 campos)
+                if len(dado) != len(colunas):
+                    print(f"Erro: Esperado {len(colunas)} campos, mas encontrado {len(dado)} campos. Recebido: {dado}")
+                    continue  # Pule este recibo se o número de campos for incorreto
+
+                # Crie um dicionário com os dados
+                recibo = dict(zip(colunas, dado))  # Mapeia os dados para as colunas
+                print(f"Recibo processado: {recibo}")  # Exemplo de como acessar os dados
+
+                # Acessando os campos do recibo diretamente pelo dicionário
+                numero = recibo['id']
+                nome = recibo['nome']
+                cpf_cnpj = recibo['cpf_cnpj']
+                valor_pago = recibo['valor_pago']
+                desconto = recibo['desconto']
+                data_emissao = recibo['data_emissao']
+                referente = recibo['referente']
+
+                # Verifique se o valor_pago e desconto são válidos e converta-os para float
+                try:
+                    valor_pago = float(valor_pago) if valor_pago is not None and valor_pago != '' else 0.0
+                    desconto = float(desconto) if desconto is not None and desconto != '' else 0.0
+                except ValueError:
+                    print(f"Valor inválido para 'Valor Pago' ou 'Desconto': {valor_pago}, {desconto}")
+                    valor_pago = desconto = 0.0  # Se não for um número válido, atribui 0.0
+
+                # Formatar os valores para a apresentação
+                valor_pago_formatado = f"R$ {valor_pago:,.2f}"
+                desconto_formatado = f"R$ {desconto:,.2f}"
+
+                # Escrever os dados no PDF
+                c.drawString(25, y_position, str(numero))  # Número do recibo
+                c.drawString(80, y_position, nome)  # Nome
+                c.drawString(230, y_position, cpf_cnpj)  # CPF/CNPJ
+                c.drawString(300, y_position, valor_pago_formatado)  # Valor Pago
+                c.drawString(370, y_position, desconto_formatado)  # Desconto
+                c.drawString(440, y_position, str(data_emissao))  # Data de Emissão
+                c.drawString(510, y_position, referente)  # Referente
+                y_position -= 20  # Desce para a próxima linha
+
+                # Acumula o valor pago
+                total_pago += valor_pago
+                
+                # Se estiver chegando no final da página, cria uma nova
+                if y_position < 50:
+                    c.showPage()  # Cria uma nova página
+                    c.setFont("Helvetica", 8)
+                    y_position = altura - 40  # Reseta a posição Y para o topo
+                    # Recria o cabeçalho da tabela na nova página
+                    c.drawString(25, y_position, "NUMERO")
+                    c.drawString(80, y_position, "Nome")
+                    c.drawString(230, y_position, "CPF/CNPJ")
+                    c.drawString(300, y_position, "Valor Pago")
+                    c.drawString(360, y_position, "Desconto")
+                    c.drawString(420, y_position, "Data Emissão")
+                    c.drawString(510, y_position, "Referente")
+                    y_position -= 20  # Espaço após o cabeçalho
+
+            # Desenha o totalizador de "Valor Pago"
+            y_position -= 20  # Ajusta a posição para o totalizador
+            total_pago_formatado = f"Total Recebido: R$ {total_pago:,.2f}"
+            c.drawString(300, y_position, total_pago_formatado)  # Desenha o total pago
+
+            # Tenta salvar o PDF e verifica se ocorreu algum erro
+            try:
+                c.save()
+                print(f"Relatório gerado com sucesso: {nome_arquivo}")  # Adiciona confirmação no terminal
+                messagebox.showinfo("Sucesso", f"Relatório gerado com sucesso: {nome_arquivo}")
+                
+                # Abrir o PDF gerado automaticamente após o salvamento
+                if sys.platform == "win32":  # Para Windows
+                    os.startfile(nome_arquivo)
+                
+            except Exception as e:
+                print(f"Erro ao salvar o arquivo: {e}")  # Exibe erro no terminal
+                messagebox.showerror("Erro", f"Ocorreu um erro ao salvar o relatório: {e}")
+
+    except Exception as e:
+        messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
+
+
+# FUNCAO NOVA GERAR RECIBOS DO X CLIENTE APENAS OU QUBERAR POR CLIENTE
+import mysql.connector
+from mysql.connector import Error
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from tkinter import messagebox, simpledialog
+import os
+import sys
+
+def gerar_Rel_Cliente():
+    try:
+        # Criar a janela de input para o nome do cliente
+        nome_cliente = simpledialog.askstring("Nome do Cliente", "Informe o nome do Cliente:", parent=None)
+        
+        if not nome_cliente:
+            messagebox.showwarning("Atenção", "Nenhum nome de Cliente Informado.")
+            return
+        
+        # Conectar ao banco de dados MySQL
+        conexao = mysql.connector.connect(
+            host='localhost',           # Endereço do servidor MySQL (pode ser 'localhost' ou IP do servidor)
+            database='dados',           # Nome do banco de dados
+            user='root',                # Seu usuário do MySQL
+            password='mysql147'         # Sua senha do MySQL
+        )
+
+        if conexao.is_connected():
+            cursor = conexao.cursor()
+
+            # Buscar dados filtrados pela consulta com o nome do cliente
+            cursor.execute("SELECT * FROM recibos WHERE nome LIKE %s", ('%' + nome_cliente + '%',))
+            dados_recibos = cursor.fetchall()
+
+            # Fechar a conexão
+            cursor.close()
+            conexao.close()
+
+            if not dados_recibos:
+                messagebox.showwarning("Atenção", f"Nenhum Recibo Encontrado para o Cliente: {nome_cliente}.")
+                return
+
+            # Criar o arquivo PDF
+            nome_arquivo = os.path.join(os.getcwd(), f"Relatorio_Recibos_{nome_cliente}.pdf")  # Caminho absoluto
+
+            # Verifique se o diretório de trabalho tem permissão para salvar o arquivo
+            if not os.access(os.getcwd(), os.W_OK):
+                messagebox.showerror("Erro", "Permissão de escrita no diretório não encontrada.")
+                return
+            
+            c = canvas.Canvas(nome_arquivo, pagesize=letter)
+            largura, altura = letter
+            
+            # Adicionar um título
+            c.setFont("Helvetica-Bold", 16)
+            c.drawString(150, altura - 40, f"Relatório de Recibos Cliente: {nome_cliente}")
+
+            # Adicionar os dados dos recibos no PDF
+            c.setFont("Helvetica", 8)
+            y_position = altura - 60  # Posição inicial para o texto
+            
+            # Cabeçalho da tabela
+            c.drawString(25, y_position, "NUMERO")
+            c.drawString(80, y_position, "Nome")
+            c.drawString(230, y_position, "CPF/CNPJ")
+            c.drawString(300, y_position, "Valor Pago")
+            c.drawString(360, y_position, "Desconto")
+            c.drawString(420, y_position, "Data Emissão")
+            c.drawString(510, y_position, "Referente")
+
+            y_position -= 20  # Espaço após o cabeçalho
+
+            # Variável para acumular o total de "Valor Pago"
+            total_pago = 0.0
+
+            # Atualize o número de colunas esperadas
+            colunas = [
+                'id', 'nome', 'cpf_cnpj', 'endereco', 'valor_pago', 'desconto', 'referente', 'data_emissao',
+                'campo_9', 'campo_10', 'campo_11', 'campo_12', 'campo_13', 'campo_14', 'campo_15', 'campo_16',
+                'observacao', 'campo_18', 'campo_19', 'campo_20'
+            ]
+            
+            # Iterar sobre os dados e adicionar no PDF
+            for dado in dados_recibos:
+                print(f"Dados recebidos: {dado}")  # Depuração para ver o que está sendo retornado
+                
+                # Verifique se o número de colunas é o esperado (20 campos)
+                if len(dado) != len(colunas):
+                    print(f"Erro: Esperado {len(colunas)} campos, mas encontrado {len(dado)} campos. Recebido: {dado}")
+                    continue  # Pule este recibo se o número de campos for incorreto
+
+                # Crie um dicionário com os dados
+                recibo = dict(zip(colunas, dado))  # Mapeia os dados para as colunas
+                print(f"Recibo processado: {recibo}")  # Exemplo de como acessar os dados
+
+                # Acessando os campos do recibo diretamente pelo dicionário
+                numero = recibo['id']
+                nome = recibo['nome']
+                cpf_cnpj = recibo['cpf_cnpj']
+                valor_pago = recibo['valor_pago']
+                desconto = recibo['desconto']
+                data_emissao = recibo['data_emissao']
+                referente = recibo['referente']
+
+                # Verifique se o valor_pago e desconto são válidos e converta-os para float
+                try:
+                    valor_pago = float(valor_pago) if valor_pago is not None and valor_pago != '' else 0.0
+                    desconto = float(desconto) if desconto is not None and desconto != '' else 0.0
+                except ValueError:
+                    print(f"Valor inválido para 'Valor Pago' ou 'Desconto': {valor_pago}, {desconto}")
+                    valor_pago = desconto = 0.0  # Se não for um número válido, atribui 0.0
+
+                # Formatar os valores para a apresentação
+                valor_pago_formatado = f"R$ {valor_pago:,.2f}"
+                desconto_formatado = f"R$ {desconto:,.2f}"
+
+                # Escrever os dados no PDF
+                c.drawString(25, y_position, str(numero))  # Número do recibo
+                c.drawString(80, y_position, nome)  # Nome
+                c.drawString(230, y_position, cpf_cnpj)  # CPF/CNPJ
+                c.drawString(300, y_position, valor_pago_formatado)  # Valor Pago
+                c.drawString(370, y_position, desconto_formatado)  # Desconto
+                c.drawString(440, y_position, str(data_emissao))  # Data de Emissão
+                c.drawString(510, y_position, referente)  # Referente
+                y_position -= 20  # Desce para a próxima linha
+
+                # Acumula o valor pago
+                total_pago += valor_pago
+                
+                # Se estiver chegando no final da página, cria uma nova
+                if y_position < 50:
+                    c.showPage()  # Cria uma nova página
+                    c.setFont("Helvetica", 8)
+                    y_position = altura - 40  # Reseta a posição Y para o topo
+                    # Recria o cabeçalho da tabela na nova página
+                    c.drawString(25, y_position, "NUMERO")
+                    c.drawString(80, y_position, "Nome")
+                    c.drawString(230, y_position, "CPF/CNPJ")
+                    c.drawString(300, y_position, "Valor Pago")
+                    c.drawString(360, y_position, "Desconto")
+                    c.drawString(420, y_position, "Data Emissão")
+                    c.drawString(510, y_position, "Referente")
+                    y_position -= 20  # Espaço após o cabeçalho
+
+            # Desenha o totalizador de "Valor Pago"
+            y_position -= 20  # Ajusta a posição para o totalizador
+            total_pago_formatado = f"Total Recebido: R$ {total_pago:,.2f}"
+            c.drawString(300, y_position, total_pago_formatado)  # Desenha o total pago
+
+            # Tenta salvar o PDF e verifica se ocorreu algum erro
+            try:
+                c.save()
+                print(f"Relatório gerado com sucesso: {nome_arquivo}")  # Adiciona confirmação no terminal
+                messagebox.showinfo("Sucesso", f"Relatório Gerado com Sucesso: {nome_arquivo}")
+                
+                # Abrir o PDF gerado automaticamente após o salvamento
+                if sys.platform == "win32":  # Para Windows
+                    os.startfile(nome_arquivo)
+                
+            except Exception as e:
+                print(f"Erro ao salvar o arquivo: {e}")  # Exibe erro no terminal
+                messagebox.showerror("Erro", f"Ocorreu um erro ao salvar o relatório: {e}")
+
+    except Exception as e:
+        messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
+
 
 def opcoes_sistema():
     messagebox.showinfo("Em Desenvolvimento", "Em Desenvolvimento - Aguarde!")    
 
 ######################### VAMOS COLOCAR AQUI OS RELATORIOS AS FUNÇOES DE CADA UM ACIMA
+
+
+
+
 
 ########################################################################################################################################################
 ###################################### CADASTRO DE CLIENTE 
@@ -991,6 +1469,8 @@ def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
     campo_data_inclusao = tk.Entry(janela_inclusao, width=12)
     campo_data_inclusao.grid(row=23, column=1, padx=10, pady=5)
     campo_data_inclusao.insert(0, data)
+
+    campo_data_inclusao.grid_forget()
 
     campo_nome_inclusao.focus_set()
 
@@ -2256,19 +2736,17 @@ menu_bar = tk.Menu(janela_principal)
 
 # Menu Cadastros
 menu_Cadastro = tk.Menu(menu_bar, tearoff=0)
-menu_Cadastro.add_command(label="CADASTRAR Clientes", command=abrir_janela_inclusao_cliente)
-menu_Cadastro.add_separator()
-menu_Cadastro.add_command(label="CONSULTAR Cliente", command=abrir_janela_consulta_clientes)
+menu_Cadastro.add_command(label="CONSULTAR/CADASTRAR Clientes", command=abrir_janela_consulta_clientes)
 menu_Cadastro.add_separator()
 menu_Cadastro.add_command(label="INCLUIR Recibo Manual", command=abrir_janela_inclusao)
 
 # Menu Relatórios
 menu_relatorios = tk.Menu(menu_bar, tearoff=0)
-menu_relatorios.add_command(label="Relatório por Data", command=relatorio_por_data)
+menu_relatorios.add_command(label="Relatório por Data", command=gerar_relatorio_filtrado)
 menu_relatorios.add_separator()
-menu_relatorios.add_command(label="Relatório Por Cliente", command=relatorio_geral)
+menu_relatorios.add_command(label="Relatório Por Cliente", command=gerar_Rel_Cliente)
 menu_relatorios.add_separator()
-menu_relatorios.add_command(label="Relatório Geral", command=relatorio_geral)
+menu_relatorios.add_command(label="Relatório Geral", command=gerar_Rel_Total)
   # Se quiser uma linha separadora
 
 # Menu Opcoes
@@ -2338,7 +2816,7 @@ cols = ("Codigo", "NOME", "CpfCnpj", "Endereco", "ALUGUEL", "VLR_PAGO", "REFEREN
 tree = ttk.Treeview(janela_principal, columns=cols, show="headings")
 
 # Definindo larguras
-larguras = [10, 120, 30, 130, 30, 40, 80, 45, 20, 20, 20, 20, 20, 20, 20, 25, 25]
+larguras = [18, 120, 45, 140, 30, 40, 80, 45, 20, 20, 20, 20, 20, 21, 23, 24, 25]
 
 for col, largura in zip(cols, larguras):
     tree.heading(col, text=col)
