@@ -979,8 +979,8 @@ def rel_Clientes():
             # Tenta salvar o PDF e verifica se ocorreu algum erro
             try:
                 c.save()
-                print(f"Relatório gerado com sucesso: {nome_arquivo}")  # Adiciona confirmação no terminal
-                messagebox.showinfo("Sucesso", f"Relatório gerado com sucesso: {nome_arquivo}")
+                
+                messagebox.showinfo("Sucesso", "Relatório gerado com sucesso:")
                 
                 # Abrir o PDF gerado automaticamente após o salvamento
                 if sys.platform == "win32":  # Para Windows
@@ -1739,7 +1739,7 @@ def abrir_janela_consulta_clientes():
     cols = ("Codigo", "Nome", "FANTASIA", "CPFCNPJ", "Telefone", "Celular", "CONTATO", "E-mail", "Endereco", "Nº", "Bairro", "Cidade", "ALUGUEL", "VLR_PAGO", "AGUA", "LUZ", "CONDOMINIO", "IPTU", "INTERNET", "LIMPEZA", "OUTROS", "Descontos", "Referente")
     tree = ttk.Treeview(janela_consulta, columns=cols, show="headings")
     
-    larguras = [10, 130, 80, 80, 60, 60, 30, 100, 150, 20, 50, 100, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40]
+    larguras = [15, 130, 80, 80, 60, 60, 30, 100, 150, 20, 50, 100, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40]
     for col, largura in zip(cols, larguras):
         tree.heading(col, text=col)
         tree.column(col, anchor="w", width=largura)
@@ -1819,10 +1819,8 @@ def abrir_janela_consulta_clientes():
         # Restante do código para criar a janela de edição (labels, entradas, etc.)
         else:
             messagebox.showwarning("Seleção Inválida", "Nenhum Cliente Selecionado.")
-
-    
+  
      
-
 
     # Criando as labels (descrições) e campos de edição (não inclui o campo de Data)
         labels = [
@@ -2682,7 +2680,7 @@ def acesso_remoto():
 # Criando a janela principal
 janela_principal = tk.Tk()
 janela_principal.title("Gerenciador de Recibos - GDI")
-janela_principal.geometry("1220x650+5+5")
+janela_principal.geometry("1240x650+5+5")
 
 # Criando o menu
 menu_bar = tk.Menu(janela_principal)
@@ -2695,11 +2693,11 @@ menu_Cadastro.add_command(label="INCLUIR Recibo Manual", command=abrir_janela_in
 
 # Menu Relatórios
 menu_relatorios = tk.Menu(menu_bar, tearoff=0)
-menu_relatorios.add_command(label="Relatório por Data", command=gerar_relatorio_filtrado)
+menu_relatorios.add_command(label="Relatório RECIBOS por Data", command=gerar_relatorio_filtrado)
 menu_relatorios.add_separator()
-menu_relatorios.add_command(label="Relatório Por Cliente", command=gerar_Rel_Cliente)
+menu_relatorios.add_command(label="Relatório RECIBOS Por Cliente", command=gerar_Rel_Cliente)
 menu_relatorios.add_separator()
-menu_relatorios.add_command(label="Relatório Clientes", command=rel_Clientes)
+menu_relatorios.add_command(label="Relatório de Clientes", command=rel_Clientes)
   # Se quiser uma linha separadora
 
 # Menu Opcoes
@@ -2764,8 +2762,8 @@ btn_excluir.grid(row=2, column=2, padx=10, pady=10)
 btn_fechar = tk.Button(janela_principal, text="Fechar", command=janela_principal.destroy, bg="gray", fg="white")  # FECHAR JANELA PRINCIPAL
 btn_fechar.grid(row=2, column=3, padx=10, pady=10)
 
-# Criando a árvore (grid de dados)
-cols = ("Codigo", "NOME", "CpfCnpj", "Endereco", "ALUGUEL", "VLR_PAGO", "REFERENTE", "DATA", "Agua", "Luz", "Condomínio", "IPTU", "Internet", "Limpeza", "OUTROS", "DESCONTO", "OBS")
+# Criando a árvore (grid de dados) da TELA PRINCIPAL DE CONSULTA DOS RECIBOS
+cols = ("N° RECIBO", "NOME", "Cpf/Cnpj", "Endereco", "ALUGUEL", "VLR_PAGO", "REFERENTE", "DATA", "Agua", "Luz", "Condomínio", "IPTU", "Internet", "Limpeza", "OUTROS", "DESCONTO", "OBS")
 tree = ttk.Treeview(janela_principal, columns=cols, show="headings")
 
 # Definindo larguras
