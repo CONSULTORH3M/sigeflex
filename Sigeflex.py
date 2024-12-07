@@ -7,7 +7,7 @@ from mysql.connector import Error
 
 # FUNCAO PARA VALIDAR A SENHA CONFORME A DATA SETADAS NO BANCO DE DADOS 10 DIAS VIRA =55, E DEPOIS DE 1 ANO VIRA=2
 def obter_senha():
-    data_inicio = datetime.date(2024, 11, 25)  # Defina a data inicial aqui
+    data_inicio = datetime.date(2024, 11, 20)  # Defina a data inicial aqui
     data_atual = datetime.date.today()  # Pegando a data de hoje
     dias_passados = (data_atual - data_inicio).days  # Calculando a diferença em dias
 
@@ -1732,14 +1732,14 @@ def abrir_janela_consulta_clientes():
     # Criando a janela de consulta
     janela_consulta = tk.Toplevel()
     janela_consulta.title("Consulta de Clientes")
-    janela_consulta.geometry("1380x850+5+5")
+    janela_consulta.geometry("1380x650+5+5")
     # Define a janela como fullscreen
-    janela_consulta.attributes('-fullscreen', True)
+    #janela_consulta.attributes('-fullscreen', True)
     
-    cols = ("Codigo", "Nome", "FANTASIA", "CPFCNPJ", "Telefone", "Celular", "CONTATO", "E-mail", "Endereco", "Nº", "Bairro", "Cidade", "ALUGUEL", "VLR_PAGO", "AGUA", "LUZ", "CONDOMINIO", "IPTU", "INTERNET", "LIMPEZA", "OUTROS", "Descontos", "Referente")
+    cols = ("Codigo", "Nome", "Fantasia", "CPFCNPJ", "Telefone", "Celular", "CONTATO", "E-mail", "Endereco", "Nº", "Bairro", "Cidade", "VLR_RECIBO", "ALUGUEL", "AGUA", "LUZ", "CONDOMINIO", "IPTU", "INTERNET", "LIMPEZA", "OUTROS", "Descontos", "REF")
     tree = ttk.Treeview(janela_consulta, columns=cols, show="headings")
     
-    larguras = [15, 130, 80, 80, 60, 60, 30, 100, 150, 20, 50, 100, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40]
+    larguras = [15, 130, 60, 75, 80, 60, 30, 80, 150, 25, 55, 100, 70, 40, 38, 40, 40, 40, 40, 40, 40, 40, 40]
     for col, largura in zip(cols, larguras):
         tree.heading(col, text=col)
         tree.column(col, anchor="w", width=largura)
@@ -1783,14 +1783,14 @@ def abrir_janela_consulta_clientes():
             cursor = conn.cursor()
             if nome_cliente:
                 cursor.execute("""
-                SELECT id, nome, fantasia, cpfcnpj, telefone1, telefone2, contato, email, endereco, numero, bairro, cidade, aluguel, valor_liquido, agua, luz, condominio, iptu, internet, limpeza, outros, descontos, referente
+                SELECT id, nome, fantasia, cpfcnpj, telefone1, telefone2, contato, email, endereco, numero, bairro, cidade, valor_liquido, aluguel, agua, luz, condominio, iptu, internet, limpeza, outros, descontos, referente
                 FROM pessoas
                 WHERE nome LIKE %s
                 ORDER BY id DESC
                 """, ('%' + nome_cliente + '%',))
             else:
                 cursor.execute("""
-                SELECT id, nome, fantasia, cpfcnpj, telefone1, telefone2, contato, email, endereco, numero, bairro, cidade, aluguel, valor_liquido, agua, luz, condominio, iptu, internet, limpeza, outros, descontos, referente
+                SELECT id, nome, fantasia, cpfcnpj, telefone1, telefone2, contato, email, endereco, numero, bairro, cidade, valor_liquido, aluguel, agua, luz, condominio, iptu, internet, limpeza, outros, descontos, referente
                 FROM pessoas
                 ORDER BY id DESC
                 """)
@@ -1813,121 +1813,130 @@ def abrir_janela_consulta_clientes():
         except mysql.connector.Error as err:
             messagebox.showerror("Erro", f"Erro ao Consultar os Clientes: {err}")
 
-#### FUNCAO DE EDITAR CLIENTE
-
-    def editar_cliente():  # Agora não recebe mais id_cliente como parâmetro
+    
+    # Função de editar cliente
+    def editar_cliente():
         item = tree.selection()  # Pega o item selecionado na Treeview
         if item:
             cliente = tree.item(item, "values")  # Pega os dados da linha selecionada
             id_cliente = cliente[0]  # O ID do cliente está na primeira coluna
             print(f"Editando o Cliente com ID: {id_cliente}")
-        
+    
         # Criar a janela de edição
             janela_edicao_cliente = tk.Toplevel()
             janela_edicao_cliente.title(f"Edição de Cliente {id_cliente}")
             janela_edicao_cliente.geometry("480x800+5+5")
             janela_edicao_cliente.resizable(False, False)
+
+        # Criando as labels (descrições) e campos de edição
+            labels = [
+            "Id", "NOME", "Fantasia", "CPF/CNPJ", "Telefone", "Celular", "Contato", "e-mail", "Endereço", 
+            "N°", "Bairro", "Cidade", "VALOR_RECIBO", "ALUGUEL", "Agua", "Luz", "Condomínio", "IPTU", 
+            "Internet", "limpeza", "OUTROS", "Descontos", "Referente"
+            ]
         
-        # Restante do código para criar a janela de edição (labels, entradas, etc.)
-        else:
-            messagebox.showwarning("Seleção Inválida", "Nenhum Cliente Selecionado.")
-  
-     
+            entradas = []  # Lista para armazenar as entradas criadas
 
-    # Criando as labels (descrições) e campos de edição (não inclui o campo de Data)
-        labels = [
-        " Id", "NOME", "Fantasia", "CPF/CNPJ", "IE", " Telefone", "Celular", "Contato", "e-mail", "Endereço", 
-        "N°", "Compl.", "Bairro", "Cidade", "ALUGUEL", "VALOR_PAGO", "Agua", "Luz", "Condomínio", "IPTU", 
-        "Internet", "limpeza", "OUTROS", "Descontos", "Referente"
-    ]
-    
-        entradas = []  # Lista para armazenar as entradas criadas
+        # Criando os campos de entrada
+            for i, label_text in enumerate(labels[1:]):  # Ignora o primeiro campo (Id)
+                label = tk.Label(janela_edicao_cliente, text=f"{label_text}:")
+                label.grid(row=i, column=0, padx=10, pady=5, sticky="e")
 
-    # Criando os campos de entrada (não inclui o campo de Data)
-        for i, label_text in enumerate(labels[1:]):  # Ignora o primeiro campo (Id)
-        # Label
-            label = tk.Label(janela_edicao_cliente, text=f"{label_text}:")
-            label.grid(row=i, column=0, padx=10, pady=5, sticky="e")
+                entry = tk.Entry(janela_edicao_cliente, width=50)
+                if label_text == "VALOR_RECIBO":  # Se for o campo 'VALOR_PAGO', deixamos ele desabilitado.
+                    entry.config(state="readonly")
+                entry.grid(row=i, column=1, padx=10, pady=5)
+                entradas.append(entry)  # Adiciona a entrada à lista
 
-        # Entry
-            entry = tk.Entry(janela_edicao_cliente, width=60)
-            entry.grid(row=i, column=1, padx=10, pady=5)
-            entradas.append(entry)  # Adiciona a entrada à lista
+        # Limpar os campos antes de preencher com dados
+            for entry in entradas:
+                entry.delete(0, tk.END)  # Limpa os campos de entrada antes de preencher
 
-    # Preenchendo as entradas com os valores do cliente (ignorando o 'Id' e 'Data')
-    # Preenchendo as entradas com os valores do cliente (ignorando o 'Id' e 'Data')
-        idx_cliente = 2  # Índice inicial do cliente após o 'Id' e 'Data' removida
-        for i, entry in enumerate(entradas):
-            try:
-        # Ignorar o valor de 'Data' (que é o campo que está causando o erro)
-                if idx_cliente == 15:  # Pulamos o campo da Data
-                    idx_cliente += 1  # Avança o índice para o próximo campo
+        # Preenchendo as entradas com os valores do cliente
+            idx_cliente = 1  # Índice inicial do cliente após o 'Id' e 'Data' removida
+            for i, entry in enumerate(entradas):
+                try:
+                    valor = cliente[idx_cliente]  # Preenche com os dados correspondentes
+                    if valor is None:
+                        valor = ""  # Se o valor for None, deixa em branco
+                    print(f"Preenchendo campo {labels[i + 1]} com valor: {valor}")  # Debugging
+                    entry.insert(0, valor)  # Preenche com os dados correspondentes
 
-                valor = str(cliente[idx_cliente]) if cliente[idx_cliente] is not None else ""  # Preenche com os dados correspondentes
-                print(f"Preenchendo campo {labels[i + 1]} com valor: {valor}")  # Debugging para verificar os valores preenchidos
-                entry.insert(0, valor)  # Preenche com os dados correspondentes
+                    idx_cliente += 1
+                except IndexError:
+                    entry.insert(0, "")  # Se não encontrar dados, insira vazio
 
-        # Ajuste no índice para a próxima iteração
-                idx_cliente += 1
-            except IndexError:
-                entry.insert(0, "")  # Se não encontrar dados, insira vazio
+        # Função para salvar a edição
+            def salvar_edicao():
+                try:
+                    conn = mysql.connector.connect(
+                        host='localhost',
+                        user='root',
+                        password='mysql147',
+                        database='dados'
+                    )
+                    cursor = conn.cursor()
 
+                # Recuperar os valores das entradas
+                    valores = [entry.get() for entry in entradas]
 
+                # Ajustar os campos numéricos (como 'descontos', 'aluguel', 'valor_liquido', etc)
+                    for i in range(len(valores)):
+                        if valores[i] == "" or valores[i] is None:
+                            valores[i] = None  # Deixa como NULL se vazio
+                        else:
+                        # Verificar se o valor é numérico antes de tentar a conversão
+                            try:
+                                if isinstance(valores[i], str) and valores[i].replace(",", "", 1).replace(".", "").isdigit():
+                                    valores[i] = valores[i].replace(",", ".")  # Garante que a vírgula seja tratada como ponto decimal
+                                    valores[i] = float(valores[i])  # Converte para float
+                            except ValueError:
+                                valores[i] = 0.00  # Se falhar, coloca 0.00 no campo numérico
 
-    # Função para salvar a edição
-        def salvar_edicao():
-            try:
-                conn = mysql.connector.connect(
-                    host='localhost',
-                    user='root',
-                    password='mysql147',
-                    database='dados'
-                )
-                cursor = conn.cursor()
+                # Cálculo do valor líquido
+                    aluguel = valores[12] if valores[12] is not None else 0.0
+                    agua = valores[13] if valores[13] is not None else 0.0
+                    luz = valores[14] if valores[14] is not None else 0.0
+                    condominio = valores[15] if valores[15] is not None else 0.0
+                    iptu = valores[16] if valores[16] is not None else 0.0
+                    internet = valores[17] if valores[17] is not None else 0.0
+                    limpeza = valores[18] if valores[18] is not None else 0.0
+                    outros = valores[19] if valores[19] is not None else 0.0
+                    descontos = valores[20] if valores[20] is not None else 0.0
 
-            # Recuperar os valores das entradas
-                valores = [entry.get() for entry in entradas]
+                # Fórmula para calcular o valor líquido
+                    valor_liquido = (aluguel + agua + luz + iptu + condominio + internet + limpeza + outros) - descontos
+                    valores[11] = valor_liquido  # Atualiza o valor_liquido na lista de valores
 
-            # Ajustar os campos numéricos (como 'descontos', 'aluguel', 'valor_liquido', etc)
-                for i in range(len(valores)):
-                    if valores[i] == "" or valores[i] is None:
-                        valores[i] = None  # Deixa como NULL se vazio
-                    else:
-                    # Verificar se o valor é numérico antes de tentar a conversão
-                        try:
-                            if isinstance(valores[i], str) and valores[i].replace(",", "").replace(".", "").isdigit():
-                                valores[i] = valores[i].replace(",", ".")  # Garante que a vírgula seja tratada como ponto decimal
-                                valores[i] = float(valores[i])  # Converte para float
-                        except ValueError:
-                            valores[i] = 0.00  # Se falhar, coloca 0.00 no campo numérico
+                    valores.append(id_cliente)  # Adiciona o id_cliente no final da tupla
 
-                valores.append(id_cliente)  # Adicionar o id_cliente no final da tupla
+                # Verificar se o número de valores corresponde ao número de parâmetros na consulta SQL
+                    expected_length = 23  # São 22 campos a serem atualizados
+                    if len(valores) != expected_length:
+                        messagebox.showerror("Erro", f"Erro: número incorreto de parâmetros. Esperado {expected_length}, mas encontrado {len(valores)}.")
+                        return  # Não prosseguir se o número de parâmetros não estiver correto
 
-            # Verificar se o número de valores corresponde ao número de parâmetros na consulta SQL
-                expected_length = 25  # Como temos 24 campos e 1 campo para o id_cliente (não inclui mais a data)
-                if len(valores) != expected_length:
-                    messagebox.showerror("Erro", f"Erro: número incorreto de parâmetros. Esperado {expected_length}, mas encontrado {len(valores)}.")
-                    return  # Não prosseguir se o número de parâmetros não estiver correto
+                # Criando a consulta SQL
+                    sql = """
+                    UPDATE pessoas SET 
+                        nome = %s, fantasia = %s, cpfcnpj = %s, telefone1 = %s, telefone2 = %s, contato = %s, email = %s, endereco = %s, numero = %s,
+                        bairro = %s, cidade = %s, aluguel = %s, valor_liquido = %s, agua = %s, luz = %s, condominio = %s, iptu = %s, internet = %s, limpeza = %s, 
+                        outros = %s, descontos = %s, referente = %s
+                    WHERE id = %s
+                    """
 
-            # Criando a consulta SQL (não inclui mais a data)
-                sql = """
-            UPDATE pessoas SET 
-                nome = %s, fantasia = %s, cpfcnpj = %s, ie = %s, telefone1 = %s, telefone2 = %s, contato = %s, email = %s, endereco = %s, numero = %s, complemento = %s,
-                bairro = %s, cidade = %s, aluguel = %s, valor_liquido = %s, agua = %s, luz = %s, condominio = %s, iptu = %s, internet = %s, limpeza = %s, 
-                outros = %s, descontos = %s, referente = %s
-            WHERE id = %s
-            """
-            
-                cursor.execute(sql, tuple(valores))  # Passando os valores corretamente para o SQL
-                conn.commit()
+                    cursor.execute(sql, tuple(valores))  # Passa os valores para o SQL
+                    conn.commit()
 
-                messagebox.showinfo("Sucesso", "Cliente Atualizado com Sucesso!")
-                conn.close()
-                janela_edicao_cliente.destroy()
+                    messagebox.showinfo("Sucesso", "Cliente Atualizado com Sucesso!")
+                    conn.close()
+                    janela_edicao_cliente.destroy()
 
-            except mysql.connector.Error as err:
-                print(f"Erro ao salvar: {err}")  # Exibir o erro específico no console
-                messagebox.showerror("Erro", f"Erro ao salvar a edição: {err}")
+                except mysql.connector.Error as err:
+                    print(f"Erro ao salvar: {err}")  # Exibir o erro específico no console
+                    messagebox.showerror("Erro", f"Erro ao salvar a edição: {err}")
+
+       
 
 
 ######### BOTOES JANELA EDITAR CLIENTES
@@ -1942,9 +1951,7 @@ def abrir_janela_consulta_clientes():
         btn_fechar = tk.Button(janela_edicao_cliente, text="Fechar", command=janela_edicao_cliente.destroy, bg="gray", fg="white")
         btn_fechar.grid(row=len(labels) - 1, column=0, padx=10, pady=10, sticky="w")  # Alinhado à esquerda
 
-
-      
-    
+         
     # Campo de texto para procurar cliente
     lbl_nome_cliente = tk.Label(janela_consulta, text="Procurar Cliente:")
     lbl_nome_cliente.pack(side=tk.LEFT, padx=15, pady=35)
@@ -1967,18 +1974,14 @@ def abrir_janela_consulta_clientes():
 # Botões para a Janela de Consulta de Clientes
     btn_incluir_cliente = tk.Button(janela_consulta, text="INCLUIR", command=abrir_janela_inclusao_cliente, bg="green", fg="white")
     btn_incluir_cliente.pack(padx=10, pady=10)
-
-
-    
+   
     btn_editar = tk.Button(janela_consulta, text="EDITAR", command=editar_cliente, bg="blue", fg="white")
     btn_editar.pack(padx=10, pady=10)
 
     btn_fechar = tk.Button(janela_consulta, text="Fechar", command=janela_consulta.destroy, bg="gray", fg="white")
     btn_fechar.pack()
 
-
 ##################################################################################### EDITANDO O CLIENTE
-
 
 ###################################### GERANDO O PDF COM BOTAO DIREITO DO MOUSE - RECIBO SIMPLES
 from tkinter import ttk, Menu, messagebox
@@ -2692,7 +2695,7 @@ def acesso_remoto():
 # Criando a janela principal
 janela_principal = tk.Tk()
 janela_principal.title("Gerenciador de Recibos - GDI")
-janela_principal.geometry("1240x650+5+5")
+janela_principal.geometry("1260x750+5+5")
 
 # Criando o menu
 menu_bar = tk.Menu(janela_principal)
@@ -2700,8 +2703,8 @@ menu_bar = tk.Menu(janela_principal)
 # Menu Cadastros
 menu_Cadastro = tk.Menu(menu_bar, tearoff=0)
 menu_Cadastro.add_command(label="CONSULTAR/CADASTRAR Clientes", command=abrir_janela_consulta_clientes)
-menu_Cadastro.add_separator()
-menu_Cadastro.add_command(label="INCLUIR Recibo Manual", command=abrir_janela_inclusao)
+#menu_Cadastro.add_separator()
+#menu_Cadastro.add_command(label="INCLUIR Recibo Manual", command=abrir_janela_inclusao)
 
 # Menu Relatórios
 menu_relatorios = tk.Menu(menu_bar, tearoff=0)
@@ -2779,7 +2782,7 @@ cols = ("N° RECIBO", "NOME", "Cpf/Cnpj", "Endereco", "ALUGUEL", "VLR_PAGO", "RE
 tree = ttk.Treeview(janela_principal, columns=cols, show="headings")
 
 # Definindo larguras
-larguras = [18, 120, 45, 140, 30, 40, 80, 45, 20, 20, 20, 20, 20, 21, 23, 24, 25]
+larguras = [18, 125, 45, 150, 30, 40, 80, 35, 20, 20, 20, 20, 20, 21, 23, 24, 25]
 
 for col, largura in zip(cols, larguras):
     tree.heading(col, text=col)
