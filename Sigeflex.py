@@ -980,7 +980,7 @@ def rel_Clientes():
             try:
                 c.save()
                 
-                messagebox.showinfo("Sucesso", "Relatório gerado com sucesso:")
+                messagebox.showinfo("Sucesso", "Relatório Dados de Clientes, Gerado com Sucesso")
                 
                 # Abrir o PDF gerado automaticamente após o salvamento
                 if sys.platform == "win32":  # Para Windows
@@ -1743,8 +1743,13 @@ def abrir_janela_consulta_clientes():
     for col, largura in zip(cols, larguras):
         tree.heading(col, text=col)
         tree.column(col, anchor="w", width=largura)
+
+    tree.tag_configure("blue", background="#D0E0FF")  # Cor azul claro
+    tree.tag_configure("gray", background="#F0F0F0")  # Cor cinza claro  
     
     tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    
+   
 
     # Adicionar um menu de contexto (botão direito do mouse)
     def exibir_menu(event):
@@ -1792,9 +1797,16 @@ def abrir_janela_consulta_clientes():
 
             clientes = cursor.fetchall()
 
-        # Preencher a Treeview com os dados
-            for cliente in clientes:
-                tree.insert("", tk.END, values=cliente)
+            # Preencher a Treeview com os dados
+             # Preencher a Treeview com os dados e alternar as cores das linhas
+            for i, cliente in enumerate(clientes):
+                item_id = tree.insert("", tk.END, values=cliente)
+                
+                # Alternando entre tags "blue" e "gray"
+                if i % 2 == 0:
+                    tree.item(item_id, tags=("blue",))  # Linha azul
+                else:
+                    tree.item(item_id, tags=("gray",))  # Linha cinza
 
             conn.close()
 
