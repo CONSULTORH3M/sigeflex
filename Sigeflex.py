@@ -1,3 +1,4 @@
+# versao 08/12/2024 as 12:13
 import customtkinter as ctk
 from tkinter import messagebox
 import sys
@@ -12,9 +13,9 @@ def obter_senha():
     dias_passados = (data_atual - data_inicio).days  # Calculando a diferença em dias
 
     if dias_passados <= 10:
-        return "1"
-    elif dias_passados <= 10 + 365:
         return "55"
+    elif dias_passados <= 10 + 365:
+        return "1"
     else:
         return "2"
 
@@ -780,15 +781,15 @@ def gerar_relatorio_filtrado():
         # Solicitar a data de início
         data_inicio = simpledialog.askstring("Data Inicio", "(ANO-MES-DIA):", parent=janela_principal)
         if not data_inicio:
-            messagebox.showwarning("Atenção", "Data inicial não informada!")
-            janela_principal.quit()  # Fecha a janela após o erro
+            messagebox.showwarning("Atenção", "Data Inicial não Informada!")
+            #janela_principal.quit()  # Fecha a janela após o erro
             return
 
         # Criação do campo de entrada para a data final
         data_fim = simpledialog.askstring("Data Final", "(ANO-MES-DIA):", parent=janela_principal)
         if not data_fim:
-            messagebox.showwarning("Atenção", "Data final não informada!")
-            janela_principal.quit()  # Fecha a janela após o erro
+            messagebox.showwarning("Atenção", "Data Final não Informada!")
+            #janela_principal.quit()  # Fecha a janela após o erro
             return
 
         # Converter as datas para o formato esperado pelo banco de dados
@@ -796,8 +797,8 @@ def gerar_relatorio_filtrado():
             data_inicio_convertida = datetime.strptime(data_inicio, "%Y-%m-%d").strftime("%Y-%m-%d")
             data_fim_convertida = datetime.strptime(data_fim, "%Y-%m-%d").strftime("%Y-%m-%d")
         except ValueError:
-            messagebox.showerror("Erro", "Formato de data inválido. Use o formato 'YYYY-MM-DD'.")
-            janela_principal.quit()  # Fecha a janela após o erro
+            messagebox.showerror("Erro", "Formato de Data Inválido. Use o formato 'YYYY-MM-DD'.")
+            #janela_principal.quit()  # Fecha a janela após o erro
             return
 
         # Buscar os dados do banco
@@ -992,12 +993,8 @@ def rel_Clientes():
 
     except Exception as e:
         messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
-
-
-
-   
+ 
 # RELATORIOS DADOS CLIENTES ACIMA
-
 
 # FUNCAO NOVA GERAR RECIBOS DO X CLIENTE APENAS OU QUBERAR POR CLIENTE
 import mysql.connector
@@ -1434,7 +1431,6 @@ def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
         salvar_cliente()
         campo_nome_inclusao.focus_set()
 
-
     janela_inclusao.bind('<Return>', on_enter)
     
     btn_fechar = tk.Button(janela_inclusao, text="Fechar", command=janela_inclusao.destroy, bg="gray", fg="white", width=15)
@@ -1443,10 +1439,7 @@ def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
 ######################################################################## CADASTRO DE CLIENTE ACIMA #######################
 
 
-######################################################## EDITAR CLIENTE ACIMA
-
 ############################# gerar recibo pdf encima cadastro do cliente
-
 ################################################################################################################################
 ################################################################################################################################
 ####################################################### GERADO RECIBO EM PDF ENCIMA  DO  CADASTRO DO CLIENTE 
@@ -1540,7 +1533,7 @@ from decimal import Decimal, InvalidOperation
 # Definição de outras funções já existentes (como obter_id_recibo, formatar_valor, etc.)
 
 # Função para gerar o PDF
-def gerar_pdf(cliente): # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE, COM O BOTAO DIREITO DO MOUSE ENCIMA DA LINHA DO X CLIENTE
+def gerar_pdf(cliente):  # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE, COM O BOTÃO DIREITO DO MOUSE ENCIMA DA LINHA DO X CLIENTE
     try:
         print(f"Cliente selecionado: {cliente}")  # Depuração para ver os dados
         print(f"Tamanho da lista cliente antes de ajustes: {len(cliente)}")  # Depuração do tamanho da lista
@@ -1606,22 +1599,35 @@ def gerar_pdf(cliente): # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE, 
         # Criação do canvas para o PDF
         c = canvas.Canvas(pdf_filename, pagesize=letter)
 
+        # Dimensões da página
+        page_width, page_height = letter
+
+        # Função para desenhar o logo
+        def desenhar_logo(canvas, y_position):
+            try:
+        # Substitua pelo caminho correto do arquivo de logo
+                logo_path = "logo.png"  # Caminho do arquivo logo (ajuste conforme necessário)
+                x_position = 45  # Ajuste a posição X conforme necessário
+                width = 110  # Largura do logo
+                height = 65  # Altura do logo
+
+        # Tente desenhar a imagem
+                canvas.drawImage(logo_path, x_position, y_position, width, height, preserveAspectRatio=True, mask='auto')
+            except Exception as e:
+                print(f"Erro ao carregar o logo: {e}")
+
         # Função para desenhar os dados financeiros no PDF
         def desenhar_pessoa(c, y_position, id, operacao, pessoa_dados):
             c.setFont("Helvetica", 10)
-    
-            # Converter o valor do ALUGUEL para float (caso ainda não seja)
+
             try:
-                aluguel_valor = float(pessoa_dados[12])  # Garantir que o valor é numérico
+                aluguel_valor = float(pessoa_dados[12])
             except ValueError:
-                aluguel_valor = 0.0  # Caso o valor esteja inválido
+                aluguel_valor = 0.0
 
-            # Convertendo o valor do aluguel para por extenso
             aluguel_por_extenso = formatar_valor_por_extenso(aluguel_valor)
-
             texto = f"Recebemos de {operacao} {pessoa_dados[1]}, CPF/CNPJ: {pessoa_dados[3]}, Residente na {pessoa_dados[8]}, {pessoa_dados[9]}, {pessoa_dados[10]}, {pessoa_dados[11]}. O VALOR de: R$ {pessoa_dados[12]}({aluguel_por_extenso}), REFERENTE: {pessoa_dados[22]}."
 
-            # Quebrar o texto se ultrapassar a largura
             largura_maxima = 450
             palavras = texto.split(" ")
             linha_atual = ""
@@ -1637,12 +1643,10 @@ def gerar_pdf(cliente): # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE, 
             if linha_atual:
                 linhas.append(linha_atual)
 
-            # Desenhando as linhas no PDF
             for linha in linhas:
                 c.drawString(50, y_position, linha)
                 y_position -= 12
 
-            # Campos financeiros
             campos_financeiros = [
                 ("ALUGUEL", pessoa_dados[12]),
                 ("Água", pessoa_dados[14]),
@@ -1656,17 +1660,16 @@ def gerar_pdf(cliente): # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE, 
                 ("Total Líquido", pessoa_dados[22])
             ]
 
-            y_position -= 12  # Um pequeno espaço antes de começar os valores
+            y_position -= 12
             for descricao, valor in campos_financeiros:
                 valor_formatado = formatar_valor(valor)
                 c.drawString(50, y_position, descricao)
-                c.drawString(450, y_position, valor_formatado)  # Ajustando a posição X para o valor
-                y_position -= 12  # Distância entre as linhas
+                c.drawString(450, y_position, valor_formatado)
+                y_position -= 12
 
-            y_position -= 10  # Distância final após os campos financeiros
+            y_position -= 10
 
-            # Formatar e desenhar a data
-            data_original = pessoa_dados[6]  # A data que vem da tabela 'pessoas'
+            data_original = pessoa_dados[6]
             if data_original == "Não informado" or not data_original:
                 data_formatada = datetime.now().strftime("%d/%m/%Y")
             else:
@@ -1686,19 +1689,28 @@ def gerar_pdf(cliente): # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE, 
             return y_position
 
         # Ajuste da posição inicial de Y para a primeira via
-        y_position_inicial = 730
+        y_position_inicial = 725
         desenhar_logo(c, y_position_inicial)  # Logo na primeira via
         y_position = desenhar_dados_empresa(c, y_position_inicial, id_recibo)  # Dados da empresa na primeira via
         y_position -= 10
         desenhar_pessoa(c, y_position, id_recibo, "Aluguel", cliente)  # Primeira via
-              
 
+        # Desenhar o retângulo ao redor da primeira via (sem alterar layout)
+        c.setStrokeColorRGB(0, 0, 0)  # Cor da borda (preto)
+        c.setLineWidth(1)  # Espessura da linha
+        
         # Ajuste da posição para a segunda via
-        y_position_inicial = 310  # Ajuste a posição para a segunda via
+        y_position_inicial = 310
         desenhar_logo(c, y_position_inicial)  # Logo na segunda via
         y_position = desenhar_dados_empresa(c, y_position_inicial, id_recibo)  # Dados da empresa na segunda via
         y_position -= 10
         desenhar_pessoa(c, y_position, id_recibo, "Aluguel", cliente)  # Segunda via
+
+        # Desenhar o retângulo
+        c.rect(20, 390, 570, 400, stroke=1, fill=0)  # Ajuste o valor de Y (200) para subir
+
+        # Retângulo ao redor da segunda via
+        c.rect(20, 5, 570, 380, stroke=1, fill=0)  # Ajuste o valor de Y (50) para a segunda via
 
         # Salvar o PDF
         c.save()
@@ -1709,6 +1721,7 @@ def gerar_pdf(cliente): # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE, 
     except Exception as e:
         messagebox.showerror("Erro", f"Ocorreu um erro: {str(e)}")
         print(f"Erro ao gerar o PDF: {e}")
+
 
 ###################################################### PEGAR O X CLIENTE NA GRID DE CONSULTA PARA GERAR O RECIBO DO CLIENTE
 
@@ -1732,7 +1745,7 @@ def abrir_janela_consulta_clientes():
     # Criando a janela de consulta
     janela_consulta = tk.Toplevel()
     janela_consulta.title("Consulta de Clientes")
-    janela_consulta.geometry("1380x650+5+5")
+    janela_consulta.geometry("1360x640+5+5")
     # Define a janela como fullscreen
     #janela_consulta.attributes('-fullscreen', True)
     
@@ -1825,7 +1838,7 @@ def abrir_janela_consulta_clientes():
         # Criar a janela de edição
             janela_edicao_cliente = tk.Toplevel()
             janela_edicao_cliente.title(f"Edição de Cliente {id_cliente}")
-            janela_edicao_cliente.geometry("480x800+5+5")
+            janela_edicao_cliente.geometry("480x650+5+5")
             janela_edicao_cliente.resizable(False, False)
 
         # Criando as labels (descrições) e campos de edição
@@ -1840,12 +1853,12 @@ def abrir_janela_consulta_clientes():
         # Criando os campos de entrada
             for i, label_text in enumerate(labels[1:]):  # Ignora o primeiro campo (Id)
                 label = tk.Label(janela_edicao_cliente, text=f"{label_text}:")
-                label.grid(row=i, column=0, padx=10, pady=5, sticky="e")
+                label.grid(row=i, column=0, padx=10, pady=3, sticky="e")
 
                 entry = tk.Entry(janela_edicao_cliente, width=50)
                 if label_text == "VALOR_RECIBO":  # Se for o campo 'VALOR_PAGO', deixamos ele desabilitado.
                     entry.config(state="readonly")
-                entry.grid(row=i, column=1, padx=10, pady=5)
+                entry.grid(row=i, column=1, padx=10, pady=3)
                 entradas.append(entry)  # Adiciona a entrada à lista
 
         # Limpar os campos antes de preencher com dados
@@ -1935,10 +1948,7 @@ def abrir_janela_consulta_clientes():
                 except mysql.connector.Error as err:
                     print(f"Erro ao salvar: {err}")  # Exibir o erro específico no console
                     messagebox.showerror("Erro", f"Erro ao salvar a edição: {err}")
-
-       
-
-
+   
 ######### BOTOES JANELA EDITAR CLIENTES
     # Botão Salvar com cor verde e texto branco
         btn_salvar = tk.Button(janela_edicao_cliente, text="Salvar (Enter)", command=salvar_edicao, bg="green", fg="white")
@@ -2586,7 +2596,7 @@ def realizar_backup():
 def criar_janela_principal():
     janela_boas = ctk.CTk()
     janela_boas.title("Bem Vindo A GDI")
-    janela_boas.geometry("720x280")
+    janela_boas.geometry("730x280")
     janela_boas.resizable(False, False)
 
     ctk.CTkLabel(janela_boas, text="Seja Bem-Vindo Aos Sistemas Desenvolvidos pela GDI", font=("Arial", 16)).pack(pady=10)
@@ -2676,6 +2686,8 @@ def realizar_backup_2():
     thread.start()
 
 #################################### CRIADO ACIMA BACKUP INTERNO NO SISTEMA PARA SALVAR EM X PASTA QUE ESCOLHER
+
+# chamar anydesk
 import subprocess
 import os
 
