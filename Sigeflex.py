@@ -2034,30 +2034,34 @@ def gerar_mes():
 
             # Inserindo o logo no topo (ajuste o caminho do arquivo de imagem)
             logo_path = "logo.png"  # Caminho para o arquivo de imagem do logo
-            c.drawImage(logo_path, 100, 740, width=100, height=50)  # Ajuste o tamanho e posição conforme necessário
+            c.drawImage(logo_path, 100, 730, width=120, height=60)  # Ajuste o tamanho e posição conforme necessário
 
             # Título do Recibo
             c.setFont("Helvetica-Bold", 16)
-            c.drawString(210, 760, f"Recibo Avulso N°: {recibos[0]}")
+            c.drawString(225, 760, f"Recibo Avulso N°: {recibos[0]}")
             
             # Adicionando informações do recibo
             c.setFont("Helvetica", 12)
-            c.drawString(100, 725, f"Nome: {recibos[1]}")
-            c.drawString(100, 705, f"CPF/CNPJ: {recibos[2]}")
-            c.drawString(100, 685, f"Endereco: {recibos[3]}")
-            c.drawString(100, 665, f"Valor Pago: R$ {recibos[5]:.2f}")
-            c.drawString(100, 645, f"Aluguel: R$ {recibos[4]:.2f}")
-            c.drawString(100, 625, f"Descontos: {recibos[15]}")
-            c.drawString(100, 605, f"Referente: {recibos[6]}")
-            c.drawString(100, 585, f"Observacao: {recibos[16]}")
-            c.drawString(100, 555, f"Tipo: RECEBEMOS( )     PAGAMOS( )")
-            c.drawString(100, 525, "PORTO XAVIER - RS IMOBILAIRA LIDER")
-            c.drawString(100, 495, "ASS ---------------------------------------")
+            c.drawString(100, 715, f"Nome: {recibos[1]}")
+            c.drawString(100, 695, f"CPF/CNPJ: {recibos[2]}")
+            c.drawString(100, 675, f"Endereco: {recibos[3]}")
+            c.drawString(100, 655, f"Valor Pago: R$ {recibos[5]:.2f}")
+            c.drawString(100, 635, f"Aluguel: R$ {recibos[4]:.2f}")
+            c.drawString(100, 615, f"Descontos: {recibos[15]}")
+            c.drawString(100, 595, f"Referente: {recibos[6]}")
+            c.drawString(100, 575, f"Observacao: {recibos[16]}")
+            c.drawString(100, 545, f"Tipo: RECEBEMOS ( )     PAGAMOS ( )")
+            c.drawString(100, 515, "        IMOBILAIRA LIDER      Porto Xavier - RS ")
+            c.drawString(100, 485, "ASS ---------------------------------------")
 
             # Obtendo a data atual
             data_atual = datetime.now().strftime("%d/%m/%Y")  # Formato: DD/MM/YYYY
-            c.drawString(100, 475, f"Data Emissao: {data_atual}")  # Substituindo pela data atual
+            c.drawString(100, 465, f"Data Emissao: {data_atual}")  # Substituindo pela data atual
 
+            # AJUSTE RETANGULO
+            c.rect(20, 390, 570, 400, stroke=1, fill=0)  # Ajuste o valor de Y (200) para subir
+
+        
             # Salvar o PDF
             c.save()
 
@@ -2295,14 +2299,21 @@ def gerar_recibo_padrao():  # SELECIONA O ID_RECIBO E PREVISUALIZA O RECIBO PADR
 
         # Desenhar as duas vias na mesma página, ajustando a posição Y
         y_position = desenhar_recibo(y_position_inicial)  # Primeira via
-        y_position -= 90  # Ajuste o valor para mover a segunda via para baixo
+        y_position -= 80  # Ajuste o valor para mover a segunda via para baixo
 
-        y_position -= 10  # Ajuste maior se necessário
+        y_position -= 45  # Ajuste maior se necessário
 
         desenhar_recibo(y_position, primeira_via=False)  # Segunda via
 
-        # Salvar a página do PDF
+        
+        # Desenhar o retângulo
+        c.rect(20, 390, 570, 400, stroke=1, fill=0)  # Ajuste o valor de Y (200) para subir
+
+        # Retângulo ao redor da segunda via
+        c.rect(20, 5, 570, 380, stroke=1, fill=0)  # Ajuste o valor de Y (50) para a segunda via
+
         c.showPage()  # Chama o showPage após desenhar as duas vias
+        # Salvar a página do PDF
         c.save()
 
         # Mostrar mensagem de sucesso
@@ -2531,11 +2542,16 @@ def gerar_recibo_padrao_data():  # SELECIONA O ID_RECIBO E PREVISUALIZA O RECIBO
         y_position = desenhar_recibo(y_position_inicial)  # Primeira via
         y_position -= 90  # Ajuste o valor para mover a segunda via para baixo
 
-        y_position -= 10  # Ajuste maior se necessário
+        y_position -= 40  # Ajuste maior se necessário
 
         desenhar_recibo(y_position, primeira_via=False)  # Segunda via
 
         # Salvar a página do PDF
+        c.rect(20, 390, 570, 400, stroke=1, fill=0)  # Ajuste o valor de Y (200) para subir
+
+        # Retângulo ao redor da segunda via
+        c.rect(20, 5, 570, 380, stroke=1, fill=0)  # Ajuste o valor de Y (50) para a segunda via
+
         c.showPage()  # Chama o showPage após desenhar as duas vias
         c.save()
 
