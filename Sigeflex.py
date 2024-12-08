@@ -262,7 +262,7 @@ def excluir_recibo():
             return
         
         # Confirmar com o usuário antes de excluir
-        confirm = messagebox.askyesno("Confirmar Exclusão", f"Você Tem Certeza que Deseja Excluir o Recibo com ID {id_recibo}?")
+        confirm = messagebox.askyesno("Confirmar Exclusão", f"Você Tem Certeza que Deseja Excluir o Recibo Numero: {id_recibo}?")
         
         if confirm:
             try:
@@ -899,7 +899,7 @@ def rel_Clientes():
             cursor = conexao.cursor()
 
             # Buscar todos os dados da tabela 'pessoas' (ajustado para a tabela de clientes)
-            cursor.execute("SELECT id, nome, endereco, telefone1, email, aluguel, referente FROM pessoas")
+            cursor.execute("SELECT id, nome, endereco, telefone1, email, aluguel, valor_liquido, referente FROM pessoas")
             dados_clientes = cursor.fetchall()
 
             # Fechar a conexão
@@ -935,14 +935,15 @@ def rel_Clientes():
             c.drawString(160, y_position, "Endereço")
             c.drawString(320, y_position, "Telefone")
             c.drawString(390, y_position, "Email")
-            c.drawString(500, y_position, "Aluguel")
-            c.drawString(540, y_position, "Referente")
+            c.drawString(440, y_position, "Aluguel")
+            c.drawString(490, y_position, "VALOR PAGO")
+            c.drawString(550, y_position, "Referente")
 
             y_position -= 20  # Espaço após o cabeçalho
 
             # Iterar sobre os dados e adicionar no PDF
             for dado in dados_clientes:
-                id_cliente, nome, endereco, telefone1, email, aluguel, referente = dado
+                id_cliente, nome, endereco, telefone1, email, aluguel, valor_liquido, referente = dado
 
                 # Tratamento para valores None (nulos)
                 nome = nome if nome is not None else ""
@@ -950,6 +951,7 @@ def rel_Clientes():
                 telefone1 = telefone1 if telefone1 is not None else ""
                 email = email if email is not None else ""
                 aluguel = aluguel if aluguel is not None else ""
+                valor_liquido = valor_liquido if valor_liquido is not None else ""
                 referente = referente if referente is not None else ""
 
                 # Escrever os dados no PDF
@@ -958,8 +960,10 @@ def rel_Clientes():
                 c.drawString(160, y_position, endereco)  # Endereço
                 c.drawString(320, y_position, telefone1)  # Telefone
                 c.drawString(390, y_position, email)  # Email
-                c.drawString(500, y_position, str(aluguel))  # Aluguel
-                c.drawString(540, y_position, referente)  # Referente
+                c.drawString(440, y_position, str(aluguel))  # Aluguel
+                c.drawString(490, y_position, str(valor_liquido))  # VALOR PAGO
+                             
+                c.drawString(550, y_position, referente)  # Referente
                 y_position -= 20  # Desce para a próxima linha
 
                 # Se estiver chegando no final da página, cria uma nova
@@ -973,8 +977,9 @@ def rel_Clientes():
                     c.drawString(160, y_position, "Endereço")
                     c.drawString(320, y_position, "Telefone")
                     c.drawString(390, y_position, "Email")
-                    c.drawString(500, y_position, "Aluguel")
-                    c.drawString(540, y_position, "Referente")
+                    c.drawString(450, y_position, "Aluguel")
+                    c.drawString(490, y_position, "VALOR_PAGO")
+                    c.drawString(550, y_position, "Referente")
                     y_position -= 20  # Espaço após o cabeçalho
 
             # Tenta salvar o PDF e verifica se ocorreu algum erro
@@ -1717,6 +1722,7 @@ def gerar_pdf(cliente):  # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE,
 
         messagebox.showinfo("PDF Gerado", f"Recibo Nº {id_recibo} para {nome}, Gerado com Sucesso!")
         os.startfile(pdf_filename)
+        janela_consulta.lift()
 
     except Exception as e:
         messagebox.showerror("Erro", f"Ocorreu um erro: {str(e)}")
@@ -1737,6 +1743,7 @@ def obter_cliente_selecionado():
 
 
     # Após fechar a janela de sucesso, traz a janela_consulta para frente
+    janela_consulta.lift()
     janela_consulta.after(100, lambda: janela_consulta.lift())  # Traz a janela para frente após a mensagem
 
 def abrir_janela_consulta_clientes():
@@ -2542,7 +2549,7 @@ def gerar_recibo_padrao_data():  # SELECIONA O ID_RECIBO E PREVISUALIZA O RECIBO
         y_position = desenhar_recibo(y_position_inicial)  # Primeira via
         y_position -= 90  # Ajuste o valor para mover a segunda via para baixo
 
-        y_position -= 40  # Ajuste maior se necessário
+        y_position -= 45  # Ajuste maior se necessário
 
         desenhar_recibo(y_position, primeira_via=False)  # Segunda via
 
@@ -2740,7 +2747,7 @@ menu_relatorios.add_command(label="Relatório RECIBOS por Data", command=gerar_r
 menu_relatorios.add_separator()
 menu_relatorios.add_command(label="Relatório RECIBOS Por Cliente", command=gerar_Rel_Cliente)
 menu_relatorios.add_separator()
-menu_relatorios.add_command(label="Relatório de Clientes", command=rel_Clientes)
+menu_relatorios.add_command(label="Relatório DADOS dos Clientes", command=rel_Clientes)
   # Se quiser uma linha separadora
 
 # Menu Opcoes
