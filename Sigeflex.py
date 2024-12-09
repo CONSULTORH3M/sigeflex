@@ -1,4 +1,4 @@
-# versao 08/12/2024 as 12:13
+# versao 08/12/2024 as 16:03
 import customtkinter as ctk
 from tkinter import messagebox
 import sys
@@ -1194,7 +1194,7 @@ def salvar_cliente():
         cursor = conn.cursor()
 
         nome = campo_nome_inclusao.get()
-        fantasia = campo_fantasia_inclusao.get() or None
+        fantasia = campo_fantasia_inclusao.get() or ''
         cpfcnpj = campo_cpfcnpj_inclusao.get() or None
         ie = campo_ie_inclusao.get() or None
         contato = campo_contato_inclusao.get() or None
@@ -1206,7 +1206,7 @@ def salvar_cliente():
         complemento = campo_complemento_inclusao.get() or None
         bairro = campo_bairro_inclusao.get() or None
         cidade = campo_cidade_inclusao.get() or None
-        aluguel = campo_aluguel_inclusao.get() or None
+        aluguel = campo_aluguel_inclusao.get()
         agua = campo_agua_inclusao.get() or None
         luz = campo_luz_inclusao.get() or None
         condominio = campo_condominio_inclusao.get() or None
@@ -1221,7 +1221,7 @@ def salvar_cliente():
         data = datetime.now().strftime('%Y-%m-%d')
 
         if not nome:
-            messagebox.showwarning("Campos obrigatórios", "O nome é obrigatório!")
+            messagebox.showwarning("Campos obrigatórios", "O Nome e Aluguel é obrigatório!")
             return
 
         # Comando SQL para inserir os dados na tabela 'pessoas' (sem o campo id e data_emissao)
@@ -1289,7 +1289,7 @@ def fechar_janela(janela):
 def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
     janela_inclusao = tk.Toplevel(janela_principal)
     janela_inclusao.title("Cadastro de Cliente")
-    janela_inclusao.geometry("600x750+5+5")  # Aumentar a altura para caber mais campos
+    janela_inclusao.geometry("600x740+5+5")  # Aumentar a altura para caber mais campos
     janela_inclusao.resizable(False, False)
 
     # Garantir que a janela de inclusão fique na frente da janela principal
@@ -1443,11 +1443,9 @@ def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
 
 ######################################################################## CADASTRO DE CLIENTE ACIMA #######################
 
-
-############################# gerar recibo pdf encima cadastro do cliente
 ################################################################################################################################
 ################################################################################################################################
-####################################################### GERADO RECIBO EM PDF ENCIMA  DO  CADASTRO DO CLIENTE 
+####################################################### GERADO RECIBO CONVERTNDO O VALOR PARA A EXTENSAO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
@@ -1522,7 +1520,7 @@ def formatar_valor_por_extenso(valor):
 #########################################################################################################################
 ######################################################################################################################
 #####################################################################################################################
-########################################################## ABRI JANELA DE CONSULTA CLIENTES ##########################################
+########################################################## GERAR RECIBO ENCIMA DO CLIENTE ##########################################
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
@@ -1722,7 +1720,6 @@ def gerar_pdf(cliente):  # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE,
 
         messagebox.showinfo("PDF Gerado", f"Recibo Nº {id_recibo} para {nome}, Gerado com Sucesso!")
         os.startfile(pdf_filename)
-        janela_consulta.lift()
 
     except Exception as e:
         messagebox.showerror("Erro", f"Ocorreu um erro: {str(e)}")
@@ -1743,7 +1740,6 @@ def obter_cliente_selecionado():
 
 
     # Após fechar a janela de sucesso, traz a janela_consulta para frente
-    janela_consulta.lift()
     janela_consulta.after(100, lambda: janela_consulta.lift())  # Traz a janela para frente após a mensagem
 
 def abrir_janela_consulta_clientes():
@@ -1833,7 +1829,10 @@ def abrir_janela_consulta_clientes():
         except mysql.connector.Error as err:
             messagebox.showerror("Erro", f"Erro ao Consultar os Clientes: {err}")
 
-    
+# GERAR RECIBO ENCIMA DO CLIENTE ACIMA
+
+############################################################################
+######################################## EDITAR CLIENTE################   
     # Função de editar cliente
     def editar_cliente():
         item = tree.selection()  # Pega o item selecionado na Treeview
@@ -1841,7 +1840,7 @@ def abrir_janela_consulta_clientes():
             cliente = tree.item(item, "values")  # Pega os dados da linha selecionada
             id_cliente = cliente[0]  # O ID do cliente está na primeira coluna
             print(f"Editando o Cliente com ID: {id_cliente}")
-    
+
         # Criar a janela de edição
             janela_edicao_cliente = tk.Toplevel()
             janela_edicao_cliente.title(f"Edição de Cliente {id_cliente}")
@@ -1854,7 +1853,7 @@ def abrir_janela_consulta_clientes():
             "N°", "Bairro", "Cidade", "VALOR_RECIBO", "ALUGUEL", "Agua", "Luz", "Condomínio", "IPTU", 
             "Internet", "limpeza", "OUTROS", "Descontos", "Referente"
             ]
-        
+
             entradas = []  # Lista para armazenar as entradas criadas
 
         # Criando os campos de entrada
@@ -1863,7 +1862,7 @@ def abrir_janela_consulta_clientes():
                 label.grid(row=i, column=0, padx=10, pady=3, sticky="e")
 
                 entry = tk.Entry(janela_edicao_cliente, width=50)
-                if label_text == "VALOR_RECIBO":  # Se for o campo 'VALOR_PAGO', deixamos ele desabilitado.
+                if label_text == "Valor_Liquido":  # Se for o campo 'VALOR_RECIBO', deixamos ele desabilitado.
                     entry.config(state="readonly")
                 entry.grid(row=i, column=1, padx=10, pady=3)
                 entradas.append(entry)  # Adiciona a entrada à lista
@@ -1877,14 +1876,44 @@ def abrir_janela_consulta_clientes():
             for i, entry in enumerate(entradas):
                 try:
                     valor = cliente[idx_cliente]  # Preenche com os dados correspondentes
-                    if valor is None:
-                        valor = ""  # Se o valor for None, deixa em branco
+
+                # Se o valor for None, substitua por uma string vazia
+                    if valor is None or valor == "None" or valor == "ONE":
+                        valor = ""  # Deixa o campo vazio se o valor for None ou "ONE"
+
                     print(f"Preenchendo campo {labels[i + 1]} com valor: {valor}")  # Debugging
                     entry.insert(0, valor)  # Preenche com os dados correspondentes
 
                     idx_cliente += 1
                 except IndexError:
                     entry.insert(0, "")  # Se não encontrar dados, insira vazio
+
+        # Adicionar o campo VALOR_LIQUIDO, que é calculado a partir dos outros valores
+            valor_liquido_label = tk.Label(janela_edicao_cliente, text="VALOR_LIQUIDO/Pago:")
+            valor_liquido_label.grid(row=len(labels) - 1, column=0, padx=10, pady=1, sticky="e")
+
+            valor_liquido_value = tk.Label(janela_edicao_cliente, text="0.00")  # Inicializa com 0.00
+            valor_liquido_value.grid(row=len(labels) - 1, column=1, padx=10, pady=2)
+
+        # Função para calcular o valor líquido e atualizar o Label de VALOR_LIQUIDO
+            def calcular_valor_liquido():
+                aluguel = float(entradas[12].get() or 0)
+                agua = float(entradas[13].get() or 0)
+                luz = float(entradas[14].get() or 0)
+                condominio = float(entradas[15].get() or 0)
+                iptu = float(entradas[16].get() or 0)
+                internet = float(entradas[17].get() or 0)
+                limpeza = float(entradas[18].get() or 0)
+                outros = float(entradas[19].get() or 0)
+                descontos = float(entradas[20].get() or 0)
+
+            # Fórmula para calcular o valor líquido
+                valor_liquido = (aluguel + agua + luz + iptu + condominio + internet + limpeza + outros) - descontos
+                valor_liquido_value.config(text=f"{valor_liquido:.2f}")  # Atualiza o valor no Label
+
+        # Calcular o valor líquido sempre que qualquer campo relevante for alterado
+            for i in range(12, 21):
+                entradas[i].bind("<FocusOut>", lambda event: calcular_valor_liquido())
 
         # Função para salvar a edição
             def salvar_edicao():
@@ -1913,19 +1942,8 @@ def abrir_janela_consulta_clientes():
                             except ValueError:
                                 valores[i] = 0.00  # Se falhar, coloca 0.00 no campo numérico
 
-                # Cálculo do valor líquido
-                    aluguel = valores[12] if valores[12] is not None else 0.0
-                    agua = valores[13] if valores[13] is not None else 0.0
-                    luz = valores[14] if valores[14] is not None else 0.0
-                    condominio = valores[15] if valores[15] is not None else 0.0
-                    iptu = valores[16] if valores[16] is not None else 0.0
-                    internet = valores[17] if valores[17] is not None else 0.0
-                    limpeza = valores[18] if valores[18] is not None else 0.0
-                    outros = valores[19] if valores[19] is not None else 0.0
-                    descontos = valores[20] if valores[20] is not None else 0.0
-
-                # Fórmula para calcular o valor líquido
-                    valor_liquido = (aluguel + agua + luz + iptu + condominio + internet + limpeza + outros) - descontos
+                # Atualiza o valor líquido com o valor calculado
+                    valor_liquido = float(valor_liquido_value.cget("text"))
                     valores[11] = valor_liquido  # Atualiza o valor_liquido na lista de valores
 
                     valores.append(id_cliente)  # Adiciona o id_cliente no final da tupla
@@ -1948,25 +1966,27 @@ def abrir_janela_consulta_clientes():
                     cursor.execute(sql, tuple(valores))  # Passa os valores para o SQL
                     conn.commit()
 
-                    messagebox.showinfo("Sucesso", "Cliente Atualizado com Sucesso!")
+                    messagebox.showinfo("Sucesso", f"Cliente {id_cliente} Atualizado com Sucesso!")
                     conn.close()
                     janela_edicao_cliente.destroy()
 
                 except mysql.connector.Error as err:
                     print(f"Erro ao salvar: {err}")  # Exibir o erro específico no console
                     messagebox.showerror("Erro", f"Erro ao salvar a edição: {err}")
+
+
    
 ######### BOTOES JANELA EDITAR CLIENTES
     # Botão Salvar com cor verde e texto branco
-        btn_salvar = tk.Button(janela_edicao_cliente, text="Salvar (Enter)", command=salvar_edicao, bg="green", fg="white")
-        btn_salvar.grid(row=len(labels) - 1, column=1, padx=10, pady=10, sticky="e")  # Alinhado à direita
+        btn_salvar = tk.Button(janela_edicao_cliente, text=" Salvar   (Enter)     ) ...)", command=salvar_edicao, bg="green", fg="white")
+        btn_salvar.grid(row=len(labels) - 1, column=1, padx=15, pady=15, sticky="e")  # Alinhado à direita
 
 # Binding para tecla Enter chamar a função salvar_edicao
         janela_edicao_cliente.bind('<Return>', lambda event: salvar_edicao())
 
     # Botão Fechar
         btn_fechar = tk.Button(janela_edicao_cliente, text="Fechar", command=janela_edicao_cliente.destroy, bg="gray", fg="white")
-        btn_fechar.grid(row=len(labels) - 1, column=0, padx=10, pady=10, sticky="w")  # Alinhado à esquerda
+        btn_fechar.grid(row=len(labels) - 1, column=1, padx=5, pady=10, sticky="e")  # Alinhado à esquerda
 
          
     # Campo de texto para procurar cliente
@@ -1998,7 +2018,7 @@ def abrir_janela_consulta_clientes():
     btn_fechar = tk.Button(janela_consulta, text="Fechar", command=janela_consulta.destroy, bg="gray", fg="white")
     btn_fechar.pack()
 
-##################################################################################### EDITANDO O CLIENTE
+##################################################################################### EDITANDO O CLIENTE ACIMA
 
 ###################################### GERANDO O PDF COM BOTAO DIREITO DO MOUSE - RECIBO SIMPLES
 from tkinter import ttk, Menu, messagebox
@@ -2041,7 +2061,7 @@ def gerar_mes():
 
             # Inserindo o logo no topo (ajuste o caminho do arquivo de imagem)
             logo_path = "logo.png"  # Caminho para o arquivo de imagem do logo
-            c.drawImage(logo_path, 100, 730, width=120, height=60)  # Ajuste o tamanho e posição conforme necessário
+            c.drawImage(logo_path, 100, 710, width=120, height=80)  # Ajuste o tamanho e posição conforme necessário
 
             # Título do Recibo
             c.setFont("Helvetica-Bold", 16)
@@ -2049,21 +2069,21 @@ def gerar_mes():
             
             # Adicionando informações do recibo
             c.setFont("Helvetica", 12)
-            c.drawString(100, 715, f"Nome: {recibos[1]}")
-            c.drawString(100, 695, f"CPF/CNPJ: {recibos[2]}")
-            c.drawString(100, 675, f"Endereco: {recibos[3]}")
-            c.drawString(100, 655, f"Valor Pago: R$ {recibos[5]:.2f}")
-            c.drawString(100, 635, f"Aluguel: R$ {recibos[4]:.2f}")
-            c.drawString(100, 615, f"Descontos: {recibos[15]}")
-            c.drawString(100, 595, f"Referente: {recibos[6]}")
-            c.drawString(100, 575, f"Observacao: {recibos[16]}")
-            c.drawString(100, 545, f"Tipo: RECEBEMOS ( )     PAGAMOS ( )")
-            c.drawString(100, 515, "        IMOBILAIRA LIDER      Porto Xavier - RS ")
-            c.drawString(100, 485, "ASS ---------------------------------------")
+            c.drawString(100, 695, f"Nome: {recibos[1]}")
+            c.drawString(100, 675, f"CPF/CNPJ: {recibos[2]}")
+            c.drawString(100, 655, f"Endereco: {recibos[3]}")
+            c.drawString(100, 635, f"Valor Pago: R$ {recibos[5]:.2f}")
+            c.drawString(100, 615, f"Aluguel: R$ {recibos[4]:.2f}")
+            c.drawString(100, 595, f"Descontos: {recibos[15]}")
+            c.drawString(100, 575, f"Referente: {recibos[6]}")
+            c.drawString(100, 555, f"Observacao: {recibos[16]}")
+            c.drawString(100, 525, f"Tipo: RECEBEMOS ( )     PAGAMOS ( )")
+            c.drawString(100, 495, "        IMOBILAIRA LIDER      Porto Xavier - RS ")
+            c.drawString(100, 465, "ASS ---------------------------------------")
 
             # Obtendo a data atual
             data_atual = datetime.now().strftime("%d/%m/%Y")  # Formato: DD/MM/YYYY
-            c.drawString(100, 465, f"Data Emissao: {data_atual}")  # Substituindo pela data atual
+            c.drawString(100, 445, f"Data Emissao: {data_atual}")  # Substituindo pela data atual
 
             # AJUSTE RETANGULO
             c.rect(20, 390, 570, 400, stroke=1, fill=0)  # Ajuste o valor de Y (200) para subir
@@ -2308,12 +2328,12 @@ def gerar_recibo_padrao():  # SELECIONA O ID_RECIBO E PREVISUALIZA O RECIBO PADR
         y_position = desenhar_recibo(y_position_inicial)  # Primeira via
         y_position -= 80  # Ajuste o valor para mover a segunda via para baixo
 
-        y_position -= 45  # Ajuste maior se necessário
+        y_position -= 50  # Ajuste maior se necessário
 
         desenhar_recibo(y_position, primeira_via=False)  # Segunda via
 
         
-        # Desenhar o retângulo
+        # Desenhar o retângulo - LINHA ENVOLTA RECIBO
         c.rect(20, 390, 570, 400, stroke=1, fill=0)  # Ajuste o valor de Y (200) para subir
 
         # Retângulo ao redor da segunda via
@@ -2593,28 +2613,46 @@ def gerar_e_fechar():
 
 
 
-######### FAZER BACKUP TOTAL DA PASTA DO SISTEMA
-# Função para realizar o backup com robocopy
+# BACKUP DO BANCO DE DADOS DO SISTEMA
+import os
+import subprocess
+from tkinter import messagebox
+import tkinter as tk
+from datetime import datetime  # Importando a biblioteca datetime
+
 def realizar_backup():
     try:
-        # Caminho de origem e destino do backup
-        origem = "C:\\Sigeflex\\recibo"  # Diretório de origem
-        destino = "C:\\Sigeflex\\Backup"  # Diretório de destino
+        # Informações do banco de dados
+        host = 'localhost'  # Pode ser o IP ou o nome do host
+        user = 'root'  # Usuário do MySQL
+        senha = 'mysql147'  # Senha do MySQL
+        banco = 'dados'  # Nome do banco de dados a ser feito o backup
         
-        # Comando de backup usando xcopy (você pode mudar para robocopy se preferir)
-        comando_backup = f'robocopy "{origem}" "{destino}" /E /Z /R:3 /W:5'
+        # Gerando a data atual no formato desejado
+        data_atual = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")  # Formato: "2024-12-08_14-30-00"
+        
+        # Caminho do arquivo de backup com a data no nome
+        destino = f'C:\\Sigeflex\\Backup\\Backup_Dados_{data_atual}.sql'  # Inclui data e hora no nome do arquivo
 
-        # Executando o comando no sistema
-        os.system(comando_backup)
+        # Comando mysqldump
+        comando_backup = f'mysqldump -h {host} -u {user} -p{senha} {banco} > "{destino}"'
+
+        # Executando o comando
+        processo = subprocess.run(comando_backup, shell=True, capture_output=True, text=True)
+
+        # Verificando se ocorreu algum erro
+        if processo.returncode != 0:
+            raise Exception(processo.stderr)
 
         # Exibe uma mensagem de sucesso
-        messagebox.showinfo("Backup Realizado com Sucesso", "Salvo na Pasta Backup(C:\\Recibo\\Backup), Recomendamos salvar em Midia Externa.")
-        
+        messagebox.showinfo("Backup Realizado com Sucesso", f"Backup do Banco de Dados do Sistema foi Salvo em {destino}")
+   
     except Exception as e:
         # Se houver um erro, exibe uma mensagem de erro
         messagebox.showerror("Erro", f"Erro ao realizar o backup: {e}")
 
-################################################
+   
+   ################################################
 # Função para criar a janela principal
 def criar_janela_principal():
     janela_boas = ctk.CTk()
@@ -2628,14 +2666,12 @@ def criar_janela_principal():
     ctk.CTkLabel(janela_boas, text="DÚVIDAS: (54) 9 9104-1029", font=("Arial", 16)).pack(pady=10)
 
     # Botão para realizar o backup
-    btn_backup = tk.Button(janela_boas, text="Realizar Backup Agora", command=realizar_backup, bg="green", fg="white", width=20)
+    btn_backup = tk.Button(janela_boas, text="Realizar Backup do Banco de Dados", command=realizar_backup, bg="green", fg="white", width=30)
     btn_backup.pack(padx=10, pady=10)
 
 # Botão para fechar a janela
-    btn_fechar = tk.Button(janela_boas, text="CONTINUAR - Fechar", command=janela_boas.destroy, bg="purple", fg="white", width=20)
+    btn_fechar = tk.Button(janela_boas, text="CONTINUAR - Entrar no Sistema", command=janela_boas.destroy, bg="purple", fg="white", width=25)
     btn_fechar.pack(padx=10, pady=10)
-
-
   
     # Executar a janela
     janela_boas.mainloop()
@@ -2645,69 +2681,100 @@ criar_janela_principal()
 
 
 
-# BACKUP DENTRO DO SISTEMA QUE POSSO ESCOLHER QUAL PASTA SALVAR
+# BACKUP DENTRO DO SISTEMA para SALVAR TODOS OS ARQUIVOS DENTRO DA PASTA BACKUP
 import os
 import subprocess
-import threading
-from tkinter import filedialog, messagebox
-from tkinter import ttk
 import tkinter as tk
+from tkinter import messagebox
+from tkinter import ttk
+from tkinter import filedialog
+import zipfile
+import shutil
 
-# Função para realizar o backup
 def realizar_backup_2():
-    # Abrir uma janela de diálogo para o usuário escolher o diretório de destino
-    destino = filedialog.askdirectory(title="Escolha a Pasta de destino para o Fazer o Backup")
+    # Função para atualizar a barra de progresso
+    def atualizar_progresso(stdout_line):
+        if "Copiados" in stdout_line:
+            # Extrai o número de arquivos copiados a partir da saída do robocopy
+            partes = stdout_line.split()
+            if len(partes) > 3 and partes[2].isdigit():
+                arquivos_copiados = int(partes[2])
+                progresso['value'] = arquivos_copiados
+                root.update_idletasks()
 
-    # Verificar se o usuário escolheu um diretório
-    if not destino:
-        messagebox.showinfo("Backup", "Backup cancelado. Nenhuma Pasta Selecionado.")
-        return
+    try:
+        # Caminho de origem dos arquivos
+        origem = "C:\\Sigeflex\\recibo"  # Diretório de origem (os arquivos que você quer salvar)
 
-    # Criar a janela de progresso APÓS a seleção do diretório
-    janela_progresso = tk.Toplevel()  # Cria uma janela nova, independente
-    janela_progresso.title("Aguarde... Realizando Backup")
-    janela_progresso.geometry("400x150")
-
-    # Criar uma barra de progresso
-    barra_progresso = ttk.Progressbar(janela_progresso, orient="horizontal", length=300, mode="indeterminate")
-    barra_progresso.pack(padx=10, pady=20)
-    barra_progresso.start()  # Inicia a barra de progresso (em modo indeterminado)
-
-    # Certifique-se de que a janela de progresso está à frente
-    janela_progresso.lift()  # Trazer a janela de progresso para a frente
-
-    # Função para realizar o backup em uma thread separada
-    def backup_thread():
-        try:
-            origem = "C:\\Sigeflex"  # Caminho de origem
-
-            # Verificar se o diretório de destino existe, caso contrário, criar
-            if not os.path.exists(destino):
-                os.makedirs(destino)
-
-            # Comando de backup usando xcopy
-            comando_backup = f'xcopy /E /I /H /Y "{origem}" "{destino}"'
-
-            # Executando o comando no sistema
-            processo = subprocess.run(comando_backup, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-            # Verificando se o comando foi executado com sucesso
-            if processo.returncode == 0:
-                messagebox.showinfo("Sucesso", "Backup Realizado com Sucesso!")
-            else:
-                messagebox.showerror("Erro", f"Erro ao realizar o backup: {processo.stderr.decode()}")
+        # Permitir que o usuário escolha o diretório de destino
+        destino = filedialog.askdirectory(title="Escolha o diretório de destino")
         
-        except subprocess.CalledProcessError as e:
-            messagebox.showerror("Erro", f"Erro na execução do comando de backup: {e}")
-        except Exception as e:
-            messagebox.showerror("Erro", f"Ocorreu um erro inesperado: {e}")
-        finally:
-            janela_progresso.destroy()  # Fecha a janela de progresso após o backup
+        # Verifica se o usuário cancelou a escolha do diretório
+        if not destino:
+            raise Exception("Nenhum diretório de destino foi selecionado.")
 
-    # Executar a função de backup em uma thread separada
-    thread = threading.Thread(target=backup_thread)
-    thread.start()
+        # Verifica se o diretório de destino existe, senão cria
+        if not os.path.exists(destino):
+            os.makedirs(destino)
 
+        # Nome do arquivo ZIP
+        nome_arquivo_zip = "Backup_Sistema.zip"
+        caminho_arquivo_zip = os.path.join(destino, nome_arquivo_zip)
+
+        # Inicia a interface gráfica
+        root = tk.Tk()
+        root.title("Backup em Progresso")
+        
+        # Label de status
+        label_status = tk.Label(root, text="Backup em Progresso...", padx=10, pady=10)
+        label_status.pack()
+
+        # Barra de progresso
+        progresso = ttk.Progressbar(root, orient="horizontal", length=300, mode="determinate")
+        progresso.pack(padx=10, pady=10)
+
+        # Comando robocopy para copiar arquivos, com opções para substituir arquivos existentes
+        comando_backup = f'robocopy "{origem}" "{destino}\\temp_backup" /E /Z /R:3 /W:5 /IS /IT'
+
+        # Executando o comando de backup dos arquivos, capturando a saída em tempo real
+        processo = subprocess.Popen(comando_backup, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+        # Loop para ler a saída em tempo real e atualizar a barra de progresso
+        for stdout_line in processo.stdout:
+            atualizar_progresso(stdout_line)
+
+        # Aguarda o término do processo
+        processo.communicate()
+
+        # Ignorar códigos de erro que não sejam críticos (3 ou menores)
+        if processo.returncode <= 3:
+            # Compactar os arquivos copiados para um arquivo ZIP
+            with zipfile.ZipFile(caminho_arquivo_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for root_dir, dirs, files in os.walk(os.path.join(destino, "temp_backup")):
+                    for file in files:
+                        zipf.write(os.path.join(root_dir, file), os.path.relpath(os.path.join(root_dir, file), os.path.join(destino, "temp_backup")))
+
+            # Exclui o diretório temporário após a compactação
+            shutil.rmtree(os.path.join(destino, "temp_backup"))
+
+            messagebox.showinfo("Backup Realizado com Sucesso", f"Backup de Todos Arquivos do Sistema, foi Salvo em {caminho_arquivo_zip}")
+        
+        else:
+            # Se houver um erro fatal (código maior que 3), exibe um erro
+            raise Exception(f"Erro no processo de backup. Código de erro: {processo.returncode}")
+
+    except Exception as e:
+        # Se houver um erro, exibe uma mensagem de erro
+        messagebox.showerror("Erro", f"Erro ao realizar o backup: {e}")
+
+    finally:
+        # Garante que a janela será fechada independentemente de sucesso ou falha
+        root.destroy()  # Fecha a janela de progresso
+
+
+
+   
+  
 #################################### CRIADO ACIMA BACKUP INTERNO NO SISTEMA PARA SALVAR EM X PASTA QUE ESCOLHER
 
 # chamar anydesk
@@ -2757,8 +2824,10 @@ menu_preferencias.add_command(label="Opcoes do Sistema", command=opcoes_sistema)
 
 # Menu Sair
 menu_ajuda = tk.Menu(menu_bar, tearoff=0)
-menu_ajuda.add_command(label="Fazer Backup", command=realizar_backup_2)
 menu_ajuda.add_command(label="Acesso Remoto", command=acesso_remoto)
+menu_ajuda.add_separator()
+menu_ajuda.add_command(label="Backup de Todos os Arquivos do Sistema", command=realizar_backup_2)
+menu_ajuda.add_separator()
 menu_ajuda.add_command(label="Sair", command=lambda: fechar_janela(janela_principal))
 
 
