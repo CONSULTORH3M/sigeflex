@@ -1,4 +1,4 @@
-# versao 08/12/2024 as 16:03
+# versao 09/12/2024 as 09:14
 import customtkinter as ctk
 from tkinter import messagebox
 import sys
@@ -725,9 +725,11 @@ def on_right_click(event):
 
 
 ######################### RELATORIO DE RECIBOS POR DATA
+
+# REALTORIO POR DATA ACIMA        
 import tkinter as tk
 from tkinter import simpledialog, messagebox
-from datetime import datetime
+from datetime import datetime, date
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import mysql.connector
@@ -759,8 +761,7 @@ def buscar_recibos_por_data(data_inicio, data_fim):
     except Error as e:
         print(f"Erro ao consultar o Banco de Dados: {e}")
         return []
-    
-from datetime import datetime, date
+
 # Função para converter data de 'YYYY-MM-DD' para 'DD/MM/YYYY'
 def formatar_data_para_pdf(data):
     try:
@@ -782,14 +783,12 @@ def gerar_relatorio_filtrado():
         data_inicio = simpledialog.askstring("Data Inicio", "(ANO-MES-DIA):", parent=janela_principal)
         if not data_inicio:
             messagebox.showwarning("Atenção", "Data Inicial não Informada!")
-            #janela_principal.quit()  # Fecha a janela após o erro
             return
 
         # Criação do campo de entrada para a data final
         data_fim = simpledialog.askstring("Data Final", "(ANO-MES-DIA):", parent=janela_principal)
         if not data_fim:
             messagebox.showwarning("Atenção", "Data Final não Informada!")
-            #janela_principal.quit()  # Fecha a janela após o erro
             return
 
         # Converter as datas para o formato esperado pelo banco de dados
@@ -798,14 +797,12 @@ def gerar_relatorio_filtrado():
             data_fim_convertida = datetime.strptime(data_fim, "%Y-%m-%d").strftime("%Y-%m-%d")
         except ValueError:
             messagebox.showerror("Erro", "Formato de Data Inválido. Use o formato 'YYYY-MM-DD'.")
-            #janela_principal.quit()  # Fecha a janela após o erro
             return
 
         # Buscar os dados do banco
         dados_recibos = buscar_recibos_por_data(data_inicio_convertida, data_fim_convertida)
         if not dados_recibos:
             messagebox.showwarning("Atenção", f"Não há Recibos para o Período de {data_inicio} a {data_fim}.")
-            
             return
 
         # Gerar o arquivo PDF
@@ -831,15 +828,28 @@ def gerar_relatorio_filtrado():
 
         # Preencher dados dos recibos
         for dado in dados_recibos:
-            c.drawString(30, y_position, str(dado[0]))  # Número do recibo
-            c.drawString(65, y_position, dado[1])  # Nome
-            c.drawString(210, y_position, dado[2])  # CPF/CNPJ
-            c.drawString(300, y_position, f"R$ {dado[4]:.2f}")  # Valor
-            c.drawString(370, y_position, f"R$ {dado[5]:.2f}")  # Desconto
-
-            data_emissao_formatada = formatar_data_para_pdf(dado[7])
+            # Verifica se o dado não é None antes de tentar usá-lo
+            numero = str(dado[0]) if dado[0] is not None else "Desconhecido"
+            nome = dado[1] if dado[1] is not None else "Desconhecido"
+            cpf_cnpj = dado[2] if dado[2] is not None else "Desconhecido"
+            valor = f"R$ {dado[4]:.2f}" if dado[4] is not None else "R$ 0,00"
+            descontos = f"R$ {dado[5]:.2f}" if dado[5] is not None else "R$ 0,00"
+            referente = dado[6] if dado[6] is not None else "Desconhecido"
+            
+            # Verifica se a data de emissão é None
+            if dado[7] is not None:
+                data_emissao_formatada = formatar_data_para_pdf(dado[7])
+            else:
+                data_emissao_formatada = "Data Inválida"
+            
+            # Preenche os dados no PDF
+            c.drawString(30, y_position, numero)  # Número do recibo
+            c.drawString(65, y_position, nome)  # Nome
+            c.drawString(210, y_position, cpf_cnpj)  # CPF/CNPJ
+            c.drawString(300, y_position, valor)  # Valor
+            c.drawString(370, y_position, descontos)  # Desconto
             c.drawString(440, y_position, data_emissao_formatada)  # Data de Emissão
-            c.drawString(510, y_position, dado[6])  # Referente
+            c.drawString(510, y_position, referente)  # Referente
             y_position -= 20
 
             # Criar nova página se necessário
@@ -869,11 +879,8 @@ def gerar_relatorio_filtrado():
 
         messagebox.showinfo("Sucesso", f"Relatório gerado com sucesso! Arquivo salvo como {nome_arquivo}")
         
-
     except Exception as e:
         messagebox.showerror("Erro", f"Erro ao gerar o relatório: {str(e)}")
-
-# REALTORIO POR DATA ACIMA        
 
 
 # RELATORIO DE TODOS OS CLIENTES NO SISTEMA
@@ -1170,7 +1177,7 @@ def gerar_Rel_Cliente():
 
 # OPÇOES DO SISTEMA
 def opcoes_sistema():
-    messagebox.showinfo("Em Desenvolvimento", "Em Desenvolvimento - Aguarde!")    
+    messagebox.showinfo("Em Desenvolvimento!","DÚVIDAS: (54) 9 9104-1029")  
 
 
 ########################################################################################################################################################
@@ -1651,7 +1658,7 @@ def gerar_pdf(cliente):  # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE,
                 y_position -= 12
 
             campos_financeiros = [
-                ("ALUGUEL", pessoa_dados[12]),
+                ("ALUGUEL", pessoa_dados[13]),
                 ("Água", pessoa_dados[14]),
                 ("Luz", pessoa_dados[15]),
                 ("Condomínio", pessoa_dados[16]),
@@ -1660,7 +1667,7 @@ def gerar_pdf(cliente):  # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE,
                 ("Limpeza", pessoa_dados[19]),
                 ("Outros", pessoa_dados[20]),
                 ("- DESCONTOS", pessoa_dados[21]),
-                ("Total Líquido", pessoa_dados[22])
+                ("Total Líquido", pessoa_dados[12])
             ]
 
             y_position -= 12
@@ -2834,7 +2841,7 @@ menu_ajuda.add_command(label="Sair", command=lambda: fechar_janela(janela_princi
 # Adicionando os submenus ao menu principal
 menu_bar.add_cascade(label="CADASTRO", menu=menu_Cadastro)
 menu_bar.add_cascade(label="RELATORIOS", menu=menu_relatorios)
-menu_bar.add_cascade(label="Prefrencias", menu=menu_preferencias)
+menu_bar.add_cascade(label="Preferencias", menu=menu_preferencias)
 menu_bar.add_cascade(label="Ajuda", menu=menu_ajuda)  # Aqui adiciona o menu "Sair"
 
 # Adicionando o menu à janela principal
