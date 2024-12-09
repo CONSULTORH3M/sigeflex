@@ -1,23 +1,10 @@
-# versao 09/12/2024 as 09:14
+#Versao dia 09/12/2024 as 12:32hs
 import customtkinter as ctk
 from tkinter import messagebox
 import sys
-import datetime  # Para pegar a data atual
+import datetime  # Para manipulação de datas
 import mysql.connector
 from mysql.connector import Error
-
-# FUNCAO PARA VALIDAR A SENHA CONFORME A DATA SETADAS NO BANCO DE DADOS 10 DIAS VIRA =55, E DEPOIS DE 1 ANO VIRA=2
-def obter_senha():
-    data_inicio = datetime.date(2024, 11, 20)  # Defina a data inicial aqui
-    data_atual = datetime.date.today()  # Pegando a data de hoje
-    dias_passados = (data_atual - data_inicio).days  # Calculando a diferença em dias
-
-    if dias_passados <= 10:
-        return "55"
-    elif dias_passados <= 10 + 365:
-        return "1"
-    else:
-        return "2"
 
 # Função para criar a conexão com o MySQL
 def conectar_mysql():
@@ -33,29 +20,6 @@ def conectar_mysql():
     except Error as e:
         print(f"Erro ao conectar ao MySQL: {e}")
         return None
-
-# Função para criar a tabela "usuarios" no MySQL (caso ainda não exista)
-# def criar_tabela_usuarios():
-#     conexao = conectar_mysql()
-#     if conexao:
-#         try:
-#             cursor = conexao.cursor()
-#             cursor.execute(''' 
-#                 CREATE TABLE IF NOT EXISTS usuarios (
-#                     id INT AUTO_INCREMENT PRIMARY KEY,
-#                     nome VARCHAR(255) NOT NULL,
-#                     login VARCHAR(50) NOT NULL,
-#                     senha VARCHAR(50) NOT NULL,
-#                     data DATE NOT NULL
-#                 );
-#             ''')
-#             conexao.commit()
-#             print("Tabela 'usuarios' criada ou já existe.")
-#         except Error as e:
-#             print(f"Erro ao criar a tabela: {e}")
-#         finally:
-#             cursor.close()
-#             conexao.close()
 
 # FUNCAO PARA NO LOGIN APARECER OS USUARIOS CADASTRADOS NO BANCO DE DADOS
 def obter_usuarios():
@@ -571,33 +535,32 @@ def editar_recibo():
             entrada = tk.Entry(janela_editar, width=40)
             entrada.grid(row=i, column=1, padx=10, pady=5)
 
-            if rotulo == "NOME":
-                campo_nome_inclusao = entrada  # Armazenar a referência do campo NOME * aqui
+            # Aplica a cor de fundo azul claro para os campos específicos
+            if rotulo in ["NOME", "ALUGUEL", "Referente"]:
+                entrada.config(bg="#ADD8E6")  # Azul claro (Light Blue)
 
             if dados[indice]:  # Se houver dados, insira no campo, senão deixe vazio
                 if rotulo == "Data de Emissão":
                     # Verificar se dados[indice] é do tipo datetime
                     if isinstance(dados[indice], datetime):
-                        # Formatar para o formato DD/MM/YYYY
                         entrada.insert(0, dados[indice].strftime("%d/%m/%Y"))
                     elif isinstance(dados[indice], str):
-                        # Caso seja uma string no formato YYYY-MM-DD
                         try:
                             entrada.insert(0, datetime.strptime(dados[indice], "%Y-%m-%d").strftime("%d/%m/%Y"))
                         except ValueError:
-                            entrada.insert(0, data_atual)  # Caso a data seja inválida, preenche com a data atual
+                            entrada.insert(0, data_atual)
                     else:
-                        entrada.insert(0, data_atual)  # Caso a data esteja em formato inesperado, preenche com a data atual
+                        entrada.insert(0, data_atual)
                 else:
                     entrada.insert(0, dados[indice])
-            elif rotulo == "Data de Emissão":  # Preencher com a data atual se o campo estiver vazio
+            elif rotulo == "Data de Emissão":
                 entrada.insert(0, data_atual)
 
             entradas[rotulo] = entrada
 
         # Coloca o foco no campo "NOME *"
-        if campo_nome_inclusao:
-            campo_nome_inclusao.focus_set()
+        if "NOME" in entradas:
+            entradas["NOME"].focus_set()
 
         # Função para calcular o VALOR_LIQUIDO
         def calcular_valor_liquido(valores):
@@ -612,13 +575,10 @@ def editar_recibo():
                 outros = float(valores.get("Outros", 0) or 0)
                 descontos = float(valores.get("DESCONTOS", 0) or 0)
 
-                # Somando os valores e subtraindo os descontos
                 valor_liquido = (aluguel + agua + luz + condominio + iptu + internet + limpeza + outros) - descontos
-
                 return valor_liquido
             except ValueError:
-                messagebox.showerror("Erro", "Por Favor, Insira Valores Numéricos Válidos nos Campos de Valor.")
-                janela_editar.attributes('-topmost', True)
+                messagebox.showerror("Erro", "Por favor, insira valores numéricos válidos.")
                 return 0
 
         # Função para atualizar a árvore (Treeview)
@@ -634,38 +594,28 @@ def editar_recibo():
                 tree.insert("", "end", values=dado)
 
         # Função para salvar a edição
-        def salvar_edicao(event=None):  # Aceita o parâmetro 'event' para o bind do Enter
+        def salvar_edicao(event=None):
             valores = {rotulo: entrada.get() for rotulo, entrada in entradas.items()}
 
-            # Validações básicas
             if not valores.get("NOME", "").strip() or not valores.get("ALUGUEL", "").strip():
-                messagebox.showwarning("Atenção", "Os campos NOME e ALUGUEL são Obrigatórios.")
-                janela_editar.attributes('-topmost', True)
+                messagebox.showwarning("Atenção", "Os campos NOME e ALUGUEL são obrigatórios.")
                 return
 
             try:
-                # Convertendo a Data de Emissão para o formato YYYY-MM-DD para o banco de dados
                 data_emissao = valores.get("Data de Emissão", "")
                 if data_emissao:
-                    # Converte para o formato correto do banco de dados (YYYY-MM-DD)
                     try:
                         data_emissao = datetime.strptime(data_emissao, "%d/%m/%Y").strftime("%Y-%m-%d")
                     except ValueError:
-                        messagebox.showerror("Erro", "A data inserida não está no formato correto (DD/MM/YYYY).")
-                        janela_editar.attributes('-topmost', True)
+                        messagebox.showerror("Erro", "Data inválida. Use o formato DD/MM/YYYY.")
                         return
                 else:
-                    # Caso a data não tenha sido informada, usa a data atual
                     data_emissao = datetime.now().strftime("%Y-%m-%d")
 
-                # Calcular o VALOR_LIQUIDO antes de salvar
                 valor_liquido = calcular_valor_liquido(valores)
 
-                # Conectar ao banco de dados MySQL e salvar a edição
                 conexao = conectar_mysql()
                 c = conexao.cursor()
-
-                # Atualizar os dados no banco de dados
                 c.execute("""UPDATE recibos SET 
                     Nome = %s, CpfCnpj = %s, Endereco = %s, ALUGUEL = %s, Referente = %s,
                     DataEmissao = %s, Agua = %s, Luz = %s, Condominio = %s, IPTU = %s,
@@ -682,13 +632,21 @@ def editar_recibo():
                 conexao.commit()
                 conexao.close()
 
-                # Atualizar a árvore e fechar a janela
                 atualizar_árvore()
-                messagebox.showinfo("Sucesso", f"EDIÇÃO RECIBO {id_recibo}, Salva com Sucesso!")
+                messagebox.showinfo("Sucesso", f"EDIÇÃO RECIBO {id_recibo} salva com sucesso!")
                 janela_editar.destroy()
 
             except mysql.connector.Error as e:
-                messagebox.showerror("Erro", f"Erro ao Salvar no Banco de Dados: {e}")
+                messagebox.showerror("Erro", f"Erro ao salvar no banco: {e}")
+
+        janela_editar.bind('<Return>', salvar_edicao)  # Salvar ao pressionar Enter
+        tk.Button(janela_editar, text="Salvar", command=salvar_edicao).grid(row=len(campos), column=0, columnspan=2, pady=10)
+
+    except IndexError:
+        messagebox.showwarning("Atenção", "Nenhum recibo selecionado.")
+    except mysql.connector.Error as e:
+        messagebox.showerror("Erro", f"Erro ao conectar ao banco: {e}")
+
 
 ############## ADICIONAR BOTOES SALVAR  E FECHAR NO EDITAR RECIBO
         # Adicionar os botões "SALVAR" e "Fechar"
@@ -2141,12 +2099,12 @@ def formatar_valor(valor):
 
 # Função para desenhar o logo no topo esquerdo de cada via
 def desenhar_logo(c, y_position):
-    c.drawImage("logo.png", 35, y_position, width=65, height=65)  # Ajuste a posição e tamanho do logo conforme necessário
+    c.drawImage("logo.png", 55, y_position, width=105, height=75)  # Ajuste a posição e tamanho do logo conforme necessário
 
 # Função para desenhar os dados da empresa ao lado do logo
 def desenhar_dados_empresa(c, y_position, id_recibo):
-    x_position_empresa = 160  # Definido para começar um pouco à direita do logo (ajustável conforme necessário)
-    c.setFont("Helvetica", 12)
+    x_position_empresa = 180  # Definido para começar um pouco à direita do logo (ajustável conforme necessário)
+    c.setFont("Helvetica", 14)
     c.drawString(x_position_empresa, y_position, f"IMOBILIÁRIA LIDER   10.605.092/0001-97                         RECIBO N°{id_recibo}")
     y_position -= 12
     c.drawString(x_position_empresa, y_position, "marcelobeutler@gmail.com | (55) 9 8116 - 9772")
@@ -2652,7 +2610,7 @@ def realizar_backup():
             raise Exception(processo.stderr)
 
         # Exibe uma mensagem de sucesso
-        messagebox.showinfo("Backup Realizado com Sucesso", f"Backup do Banco de Dados do Sistema foi Salvo em {destino}")
+        messagebox.showinfo("Backup Realizado com Sucesso", f"Backup do Banco de Dados do Sistema Salvo em = {destino}")
    
     except Exception as e:
         # Se houver um erro, exibe uma mensagem de erro
@@ -2667,9 +2625,9 @@ def criar_janela_principal():
     janela_boas.geometry("730x280")
     janela_boas.resizable(False, False)
 
-    ctk.CTkLabel(janela_boas, text="Seja Bem-Vindo Aos Sistemas Desenvolvidos pela GDI", font=("Arial", 16)).pack(pady=10)
-    ctk.CTkLabel(janela_boas, text="*** Agora em MYSQL, um Banco de Dados, Muito Mais Robusto, e com Possibilidade também de Fazer Backup - Versão 2024.2***", font=("Arial", 12)).pack(pady=5)
-    ctk.CTkLabel(janela_boas, text="*** Caminho onde salva o Backup = C\\SIGEFLEX\\BACKUP ***", font=("Arial", 12)).pack(pady=5)
+    ctk.CTkLabel(janela_boas, text="Seja Bem-Vindo! Aos Sistemas Desenvolvidos pela GDI Informática", font=("Arial", 16)).pack(pady=10)
+    ctk.CTkLabel(janela_boas, text="*** Agora em MYSQL, um Banco de Dados, Muito Mais Robusto, e com Possibilidade para Fazer Backup - Versão 2024.2***", font=("Arial", 12)).pack(pady=5)
+    ctk.CTkLabel(janela_boas, text="*** Caminho onde será salvo o Backup = C\\SIGEFLEX\\BACKUP ***", font=("Arial", 12)).pack(pady=5)
     ctk.CTkLabel(janela_boas, text="DÚVIDAS: (54) 9 9104-1029", font=("Arial", 16)).pack(pady=10)
 
     # Botão para realizar o backup
@@ -2764,7 +2722,7 @@ def realizar_backup_2():
             # Exclui o diretório temporário após a compactação
             shutil.rmtree(os.path.join(destino, "temp_backup"))
 
-            messagebox.showinfo("Backup Realizado com Sucesso", f"Backup de Todos Arquivos do Sistema, foi Salvo em {caminho_arquivo_zip}")
+            messagebox.showinfo("Backup Realizado com Sucesso", f"Todos Arquivos da Pasta do Sistema, foi Salvo em {caminho_arquivo_zip}")
         
         else:
             # Se houver um erro fatal (código maior que 3), exibe um erro
@@ -2777,9 +2735,6 @@ def realizar_backup_2():
     finally:
         # Garante que a janela será fechada independentemente de sucesso ou falha
         root.destroy()  # Fecha a janela de progresso
-
-
-
    
   
 #################################### CRIADO ACIMA BACKUP INTERNO NO SISTEMA PARA SALVAR EM X PASTA QUE ESCOLHER
