@@ -3,13 +3,18 @@ from tkinter import messagebox
 import sys
 import mysql.connector
 from mysql.connector import Error
-
 import configparser
 
 # Função para obter o IP do servidor a partir do arquivo config.ini
 def obter_host_config():
     config = configparser.ConfigParser()
-    config.read('config.ini')  # Lê o arquivo de configuração
+
+    # Lê apenas as duas primeiras linhas do arquivo 'config.ini'
+    with open('config.ini', 'r') as file:
+        lines = file.readlines()  # Lê todas as linhas do arquivo
+
+    # Limita a leitura às duas primeiras linhas e carrega isso no configparser
+    config.read_string(''.join(lines[:2]))  # Lê as duas primeiras linhas como uma string
 
     # Pega o valor do host da seção [mysql]
     host = config.get('mysql', 'host', fallback='localhost')  # Default é 'localhost' se não encontrado
@@ -40,7 +45,12 @@ def conectar_mysql():
 host = obter_host_config()
 print(f"O IP do servidor MySQL é: {host}")
 
+
 # FUNCAO PARA NO LOGIN APARECER OS USUARIOS CADASTRADOS NO BANCO DE DADOS
+import sys
+import customtkinter as ctk
+
+# Função que retorna os usuários cadastrados no banco de dados
 def obter_usuarios():
     conexao = conectar_mysql()
     usuarios = []
@@ -56,7 +66,7 @@ def obter_usuarios():
             conexao.close()
     return usuarios
 
-# FUNCAO QUE VERIFICA A SENHA CORRETA
+# Função que verifica a senha correta
 def verificar_login():
     usuario_selecionado = entry_usuario.get()  # Obtemos o login selecionado do menu
     senha_digitada = entry_senha.get()
@@ -90,20 +100,37 @@ def verificar_login():
             cursor.close()
             conexao.close()
 
-# FUNCAO QUE SALVA O ULTIMO USUÁRIO LOGADO
+# Função para salvar o último usuário logado, preservando as outras informações do arquivo
 def salvar_ultimo_usuario(usuario):
     try:
+        # Lê o conteúdo existente do arquivo
+        with open("parametros.txt", "r") as f:
+            linhas = f.readlines()
+
+        # Se o arquivo tiver menos de 1 linha, preenche as linhas ausentes
+        while len(linhas) < 1:
+            linhas.append("")  # Adiciona linhas em branco se necessário
+
+        # Atualiza a primeira linha (onde o usuário será salvo)
+        linhas[0] = usuario + "\n"  # A linha 0 (índice 0) é onde o último usuário ficará
+
+        # Escreve as linhas de volta no arquivo, preservando as outras informações
         with open("parametros.txt", "w") as f:
-            f.write(usuario)
+            f.writelines(linhas)  # Grava todas as linhas de volta no arquivo, mantendo as outras informações
+
     except Exception as e:
         print(f"Erro ao salvar o último usuário: {e}")
-
+        
 # Função para carregar o último usuário do arquivo
 def carregar_ultimo_usuario():
     try:
         with open("parametros.txt", "r") as f:
-            ultimo_usuario = f.read().strip()  # Lê e remove espaços em branco extras
-            return ultimo_usuario
+            linhas = f.readlines()
+            if len(linhas) >= 1:
+                ultimo_usuario = linhas[0].strip()  # A primeira linha contém o último usuário
+                return ultimo_usuario
+            else:
+                return None  # Se não houver linha 1, retorna None
     except FileNotFoundError:
         return None  # Se o arquivo não existir, retorna None
 
@@ -112,8 +139,6 @@ def on_close():
     sys.exit()
 
 # CRIANDO A JANELA DE LOGIN
-import customtkinter as ctk
-
 # Aqui você obteria o host do MySQL (ajuste conforme sua função)
 host = obter_host_config()
 
@@ -168,8 +193,8 @@ janela_login.bind("<Return>", lambda event: verificar_login())
 janela_login.mainloop()
 
 
-
 ######################################### LOGIN ACIMA
+
 ####################################################################################################################################################
 #  TELA DE PROCURAR DOS RECIBOS NA TELA PRINCIPAL E MOSTRAR NA TELA
 ####################################################################################################################################################
@@ -309,6 +334,7 @@ def abrir_janela_inclusao():  # INCLUSAO DE RECIBO MANUAL
     janela_inclusao.title("INCLUIR Recibo MANUAL")
     janela_inclusao.geometry("600x620+5+5")  # Ajuste no tamanho da janela para permitir mais espaço
     janela_inclusao.resizable(False, False)
+    janela_inclusao.iconbitmap("icon.ico")
 
     # Garantir que as colunas e linhas da grid se ajustem ao tamanho da janela
     janela_inclusao.grid_columnconfigure(0, weight=1, minsize=100)
@@ -666,7 +692,7 @@ def editar_recibo():
                 conexao.close()
 
                 atualizar_árvore()
-                messagebox.showinfo("Sucesso", f"EDIÇÃO RECIBO {id_recibo} salva com sucesso!")
+                messagebox.showinfo("Sucesso", f"EDIÇÃO RECIBO {id_recibo}, Salvo com Sucesso!")
                 janela_editar.destroy()
 
             except mysql.connector.Error as e:
@@ -698,7 +724,7 @@ def editar_recibo():
 ######################################################################################
 #####################################################################################
 #####################################################################################
-# Função chamada para fechar o menu QUAL MENU?
+# Função chamada para fechar o menu QUAL MENU ACHO QUE o do mouse com botao direito, teum uma janela fechar
 def fechar_menu():
     menu_post_click.unpost()  # Fecha o menu de contexto
 
@@ -716,9 +742,7 @@ def on_right_click(event):
 ####################################################################### EDITAR ACIMA #################################################################
 
 
-######################### RELATORIO DE RECIBOS POR DATA
-
-# REALTORIO POR DATA ACIMA        
+######################### RELATORIO DE RECIBOS POR DATA   
 import tkinter as tk
 from tkinter import simpledialog, messagebox
 from datetime import datetime, date
@@ -767,7 +791,7 @@ def formatar_data_para_pdf(data):
     except ValueError:
         return data
 
-# Função para gerar o relatório filtrado
+# Função para gerar o relatório filtrado por DATA
 def gerar_relatorio_filtrado():
     try:
         # Criando a janela principal
@@ -872,12 +896,14 @@ def gerar_relatorio_filtrado():
         else:
             os.system(f"xdg-open {nome_arquivo}")
 
-        messagebox.showinfo("Sucesso", f"Relatório gerado com sucesso! Arquivo salvo como {nome_arquivo}")
+        messagebox.showinfo("Sucesso", f"Relatório Gerado com Sucesso! Arquivo salvo como {nome_arquivo}")
         
     except Exception as e:
         messagebox.showerror("Erro", f"Erro ao gerar o relatório: {str(e)}")
 
+# RELATORIO DATAS ACIMA
 
+##############################################################################
 # RELATORIO DE TODOS OS CLIENTES NO SISTEMA
 from mysql.connector import Error
 from reportlab.lib.pagesizes import letter
@@ -1003,10 +1029,10 @@ def rel_Clientes():
     except Exception as e:
         messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
  
-# RELATORIOS DADOS CLIENTES ACIMA
+# RELATORIOS DADOS DE TODOS OS CLIENTES ACIMA
 
-# FUNCAO NOVA GERAR RECIBOS DO X CLIENTE APENAS OU QUBERAR POR CLIENTE
-import mysql.connector
+######################################################################
+# FUNCAO RELATORIO DE CLIENTES ESCOLHENDO O X NOME
 from mysql.connector import Error
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -1166,21 +1192,71 @@ def gerar_Rel_Cliente():
     except Exception as e:
         messagebox.showerror("Erro", f"Ocorreu um erro: {e}")
 
-# RELATORIO DE TODOS OS CLIENTES ACIMA
+# RELATORIO DE RECIBOS POR X CLIENTE ACIMA
 
+############################################################OPCOES DO SISTEMA #################
 # OPÇOES DO SISTEMA
-def opcoes_sistema():
-    messagebox.showinfo("Em Desenvolvimento!","DÚVIDAS: (54) 9 9104-1029")  
+import tkinter as tk
+from tkinter import messagebox
 
+# Função para carregar o conteúdo de parametros.txt
+def carregar_parametros():
+    try:
+        with open('parametros.txt', 'r') as file:
+            conteudo = file.read()
+        return conteudo
+    except Exception as e:
+        return "Erro ao ler o arquivo: " + str(e)
+
+# Função para salvar as alterações no parametros.txt
+def salvar_parametros(janela_edicao):
+    try:
+        with open('parametros.txt', 'w') as file:
+            file.write(text_area.get("1.0", tk.END))  # Pega todo o conteúdo do Text e salva no arquivo
+        messagebox.showinfo("Sucesso", "Informações Salvas com Sucesso!")
+        janela_edicao.destroy()  # Fecha a janela após salvar
+    except Exception as e:
+        messagebox.showerror("Erro", f"Erro ao Salvar o Arquivo: {e}")
+
+# Função que abre a tela de edição e exibe o conteúdo do arquivo
+def editar_parametros():
+    # Cria a janela principal
+    janela_edicao = tk.Tk()
+    janela_edicao.title("Editar Conteudo Parâmetros")
+
+    # Cria um Text widget para exibir e editar o conteúdo do arquivo
+    global text_area
+    text_area = tk.Text(janela_edicao, width=50, height=20)
+    text_area.pack(pady=10)
+
+    # Carrega o conteúdo do arquivo no Text widget
+    conteudo = carregar_parametros()
+    text_area.insert(tk.END, conteudo)
+
+    # Botão para salvar as alterações
+    salvar_button = tk.Button(janela_edicao, 
+                          text="Salvar Alterações", 
+                          command=lambda: salvar_parametros(janela_edicao),
+                          bg="green",  # Cor de fundo (verde)
+                          fg="white")  # Cor da fonte (branca)
+    salvar_button.pack(pady=5)
+    
+
+    # Exibe a janela
+    janela_edicao.mainloop()
+
+# Função que exibe a mensagem de informações e permite editar o arquivo
+def opcoes_sistema():
+    messagebox.showinfo(" Opções em Construção!", "DÚVIDAS: (54) 9 9104-1029")
+    editar_parametros()  # Chama a função que permite editar o arquivo
 
 ########################################################################################################################################################
-###################################### CADASTRO DE CLIENTE 
+
+###################################### CADASTRO DE CLIENTE # Função para salvar o cliente no banco de dados MySQL
 import tkinter as tk
 from tkinter import messagebox
 import mysql.connector
 from datetime import datetime
-
-# Função para salvar o cliente no banco de dados MySQL
 def salvar_cliente():
     try:
         # Conectar ao banco de dados MySQL
@@ -1252,7 +1328,6 @@ def salvar_cliente():
     except Exception as e:
         messagebox.showerror("Erro", f"Erro desconhecido: {e}")
 
-
 # Função para limpar os campos após salvar
 def limpar_campos():
     campo_nome_inclusao.delete(0, tk.END)
@@ -1288,8 +1363,9 @@ def fechar_janela(janela):
 def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
     janela_inclusao = tk.Toplevel(janela_principal)
     janela_inclusao.title("Cadastro de Cliente")
-    janela_inclusao.geometry("600x740+5+5")  # Aumentar a altura para caber mais campos
+    janela_inclusao.geometry("580x745+5+5")  # Aumentar a altura para caber mais campos
     janela_inclusao.resizable(False, False)
+    janela_inclusao.iconbitmap("icon.ico")
 
     # Garantir que a janela de inclusão fique na frente da janela principal
     janela_inclusao.lift()  # Coloca a janela em primeiro plano
@@ -1442,42 +1518,52 @@ def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
 
 ######################################################################## CADASTRO DE CLIENTE ACIMA #######################
 
+
 ################################################################################################################################
-################################################################################################################################
-####################################################### GERADO RECIBO CONVERTNDO O VALOR PARA A EXTENSAO
+####################################################### GERADO RECIBO PADRAO CONVERTNDO O VALOR PARA A EXTENSAO
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from datetime import datetime
 from tkinter import messagebox
 import os
-from num2words import num2words  # Importa a biblioteca para converter números em texto
-
+from num2words import num2words  
 # Função para converter número para por extenso
 def numero_por_extenso(valor):
     return num2words(valor, lang='pt_BR')
 
 # Função para gerar e atualizar o ID do recibo
+import os
+
 def obter_id_recibo():
-    contador_path = "contador_recibo.txt"
+    contador_path = "parametros.txt"
     
     # Verifica se o arquivo existe
     if os.path.exists(contador_path):
-        # Lê o contador atual
         with open(contador_path, "r") as f:
-            contador = int(f.read().strip())  # Lê e converte para inteiro
+            linhas = f.readlines()  # Lê todas as linhas do arquivo
+
+            # Verifica se o arquivo tem pelo menos 2 linhas
+            if len(linhas) >= 2:
+                # Pega o valor da segunda linha e converte para inteiro
+                contador = int(linhas[1].strip())
+            else:
+                # Caso o arquivo tenha menos de 2 linhas, define um valor padrão (ex: 1)
+                contador = 1
     else:
-        # Se o arquivo não existir, cria o arquivo e inicia o contador
+        # Se o arquivo não existir, cria o arquivo e define o valor da segunda linha como 1
         contador = 1
         with open(contador_path, "w") as f:
-            f.write(str(contador))  # Inicia o contador com 1
+            f.write("0\n")  # Primeira linha (vazio ou algum valor)
+            f.write(str(contador))  # Segunda linha com o valor 1
     
-    # Atualiza o contador (incrementa)
+    # Atualiza a segunda linha do arquivo (incrementando o valor)
     contador += 1
     with open(contador_path, "w") as f:
-        f.write(str(contador))  # Atualiza o arquivo com o novo contador
+        f.write("0\n")  # Mantém a primeira linha com "0" ou qualquer valor desejado
+        f.write(str(contador))  # Atualiza a segunda linha com o novo contador
     
-    return contador - 1  # Retorna o ID do recibo antes de incrementar
+    return contador - 1  # Retorna o valor da segunda linha antes de incrementar
 
 # FUNCAO PARA GERAR POR EXTENSO O VALOR DO ALUGUEL(VALOR PAGO)
 from num2words import num2words
@@ -1532,8 +1618,7 @@ import os
 from num2words import num2words
 from decimal import Decimal, InvalidOperation
 
-# Definição de outras funções já existentes (como obter_id_recibo, formatar_valor, etc.)
-
+##############################################################################################################
 # Função para gerar o PDF
 def gerar_pdf(cliente):  # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE, COM O BOTÃO DIREITO DO MOUSE ENCIMA DA LINHA DO X CLIENTE
     try:
@@ -1734,20 +1819,28 @@ def obter_cliente_selecionado():
         cliente = tree.item(selected_item)["values"]  # Pega os valores da linha
         print(f"Cliente selecionado: {cliente}")  # Depuração para verificar se o cliente foi obtido corretamente
         gerar_pdf(cliente)  # Chama a função gerar_pdf com os dados do cliente selecionado
+        messagebox.showinfo("Sucesso", "PDF gerado com sucesso!")  # Exibe a mensagem de sucesso
+
+        # Traz a janela_consulta para frente
+        if janela_consulta.state() == 'withdrawn':  # Se a janela estiver oculta, torna-a visível
+            janela_consulta.deiconify()
+        janela_consulta.lift()  # Traz a janela para frente
+        janela_consulta.focus_force()  # Garante que a janela tenha foco
     else:
         messagebox.showwarning("Seleção Inválida", "Nenhum Cliente Selecionado.")
 
 
-    # Após fechar a janela de sucesso, traz a janela_consulta para frente
-    janela_consulta.after(100, lambda: janela_consulta.lift())  # Traz a janela para frente após a mensagem
-
+############################# JANELA DE CONSULTA CLIENTES
 def abrir_janela_consulta_clientes():
     global tree, janela_consulta
+
+    janela_principal.iconify()
 
     # Criando a janela de consulta
     janela_consulta = tk.Toplevel()
     janela_consulta.title("Consulta de Clientes")
     janela_consulta.geometry("1360x640+5+5")
+    janela_consulta.iconbitmap("icon.ico")
     # Define a janela como fullscreen
     #janela_consulta.attributes('-fullscreen', True)
     
@@ -1763,8 +1856,7 @@ def abrir_janela_consulta_clientes():
     tree.tag_configure("gray", background="#F0F0F0")  # Cor cinza claro  
     
     tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-    
-   
+      
 
     # Adicionar um menu de contexto (botão direito do mouse)
     def exibir_menu(event):
@@ -1836,6 +1928,7 @@ def abrir_janela_consulta_clientes():
 ############################################################################
 ######################################## EDITAR CLIENTE################   
     # Função de editar cliente
+   
     def editar_cliente():
         item = tree.selection()  # Pega o item selecionado na Treeview
         if item:
@@ -1846,7 +1939,7 @@ def abrir_janela_consulta_clientes():
         # Criar a janela de edição
             janela_edicao_cliente = tk.Toplevel()
             janela_edicao_cliente.title(f"Edição de Cliente {id_cliente}")
-            janela_edicao_cliente.geometry("480x650+5+5")
+            janela_edicao_cliente.geometry("500x650+5+5")
             janela_edicao_cliente.resizable(False, False)
 
         # Criando as labels (descrições) e campos de edição
@@ -1864,7 +1957,7 @@ def abrir_janela_consulta_clientes():
                 label.grid(row=i, column=0, padx=10, pady=3, sticky="e")
 
                 entry = tk.Entry(janela_edicao_cliente, width=50)
-                if label_text == "Valor_Liquido":  # Se for o campo 'VALOR_RECIBO', deixamos ele desabilitado.
+                if label_text == "VALOR_RECIBO":  # Se for o campo 'VALOR_RECIBO', deixamos ele desabilitado.
                     entry.config(state="readonly")
                 entry.grid(row=i, column=1, padx=10, pady=3)
                 entradas.append(entry)  # Adiciona a entrada à lista
@@ -1891,7 +1984,7 @@ def abrir_janela_consulta_clientes():
                     entry.insert(0, "")  # Se não encontrar dados, insira vazio
 
         # Adicionar o campo VALOR_LIQUIDO, que é calculado a partir dos outros valores
-            valor_liquido_label = tk.Label(janela_edicao_cliente, text="VALOR_LIQUIDO/Pago:")
+            valor_liquido_label = tk.Label(janela_edicao_cliente, text="VALOR PAGO ATUALIZADO:")
             valor_liquido_label.grid(row=len(labels) - 1, column=0, padx=10, pady=1, sticky="e")
 
             valor_liquido_value = tk.Label(janela_edicao_cliente, text="0.00")  # Inicializa com 0.00
@@ -1920,12 +2013,14 @@ def abrir_janela_consulta_clientes():
         # Função para salvar a edição
             def salvar_edicao():
                 try:
-                    conn = mysql.connector.connect(
-                        host='localhost',
-                        user='root',
-                        password='mysql147',
-                        database='dados'
-                    )
+                    conexao = conectar_mysql()
+                    c = conexao.cursor()
+
+                    conn = conexao = conectar_mysql()
+
+                    c = conexao.cursor()
+
+                    cursor = conexao.cursor()
                     cursor = conn.cursor()
 
                 # Recuperar os valores das entradas
@@ -1960,7 +2055,7 @@ def abrir_janela_consulta_clientes():
                     sql = """
                     UPDATE pessoas SET 
                         nome = %s, fantasia = %s, cpfcnpj = %s, telefone1 = %s, telefone2 = %s, contato = %s, email = %s, endereco = %s, numero = %s,
-                        bairro = %s, cidade = %s, aluguel = %s, valor_liquido = %s, agua = %s, luz = %s, condominio = %s, iptu = %s, internet = %s, limpeza = %s, 
+                        bairro = %s, cidade = %s, valor_liquido = %s, aluguel = %s, agua = %s, luz = %s, condominio = %s, iptu = %s, internet = %s, limpeza = %s, 
                         outros = %s, descontos = %s, referente = %s
                     WHERE id = %s
                     """
@@ -2017,7 +2112,9 @@ def abrir_janela_consulta_clientes():
     btn_editar = tk.Button(janela_consulta, text="EDITAR", command=editar_cliente, bg="blue", fg="white")
     btn_editar.pack(padx=10, pady=10)
 
-    btn_fechar = tk.Button(janela_consulta, text="Fechar", command=janela_consulta.destroy, bg="gray", fg="white")
+    btn_fechar = tk.Button(janela_consulta, text="Fechar Sistema", 
+                       command=lambda: [janela_consulta.destroy(), janela_principal.destroy()], 
+                       bg="gray", fg="white")
     btn_fechar.pack()
 
 ##################################################################################### EDITANDO O CLIENTE ACIMA
@@ -2030,7 +2127,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from datetime import datetime  # Importando datetime para usar a data atual
 
-# Função para gerar PDF - que É O RECIBO SIMPLES, - AVULSO, MAS SE MEXER NO GERAR MES NAO FUNCIONA.
+# Função para gerar PDF - que É O RECIBO SIMPLES,
 def gerar_mes():
     try:  
         item_selecionado = tree.selection()[0]  # Obtém o item selecionado na árvore
@@ -2319,7 +2416,6 @@ def gerar_recibo_padrao():  # SELECIONA O ID_RECIBO E PREVISUALIZA O RECIBO PADR
 
             c.drawString(80, y_position,   f"                       Ass:_____________________________________")
             y_position -= 5
-
            
             return y_position  # Retorna a posição Y atualizada
 
@@ -2351,11 +2447,11 @@ def gerar_recibo_padrao():  # SELECIONA O ID_RECIBO E PREVISUALIZA O RECIBO PADR
 
     except Exception as e:
         messagebox.showerror("Erro", f"Ocorreu um Erro: {str(e)}")
-############################################################################# GERAR RECIBO PADRAO ACIMA COM DATA DA CRIACAO
+############################################################################# GERAR RECIBO PADRAO ACIMAC OM DATA DA CRIACAO
 #
 #
 # 
-# ######################################################RECIBO PADRAO COM DATA ATUAL E BOTAO DIREITO MOUSE  DATA ATUAL
+# ######################################################RECIBO PADRAO COM DATA ATUAL E BOTAO   DATA ATUAL
 from decimal import Decimal, InvalidOperation
 from num2words import num2words
 import sqlite3
@@ -2365,7 +2461,6 @@ import os
 import textwrap
 from tkinter import messagebox, simpledialog
 from tkinter import ttk  # Importando o Combobox
-
 ###################################################################################
 # Função para garantir que os valores sejam formatados corretamente como Decimal
 def formatar_valor(valor):
@@ -2551,7 +2646,6 @@ def gerar_recibo_padrao_data():  # SELECIONA O ID_RECIBO E PREVISUALIZA O RECIBO
 
             y_position -= 20
 
-            
             #c.drawString(100, 475, f"Data Emissao: {data_atual}")  # Substituindo pela data atual
             c.drawString(50, y_position, f"Recebido Em: {data_atual}                          IMOBILIARIA LIDER")
             y_position -= 30
@@ -2589,6 +2683,7 @@ def gerar_recibo_padrao_data():  # SELECIONA O ID_RECIBO E PREVISUALIZA O RECIBO
 
 ################################### RECIBO PADRAO DATA ATUAL ACIMA ##################################
 
+
 ############################################################## FUNCAO DO BOTAO DIREITO MOUSE
 # Função chamada para fechar o menu
 def fechar_menu():
@@ -2609,8 +2704,6 @@ def on_right_click(event):
 def gerar_e_fechar():
     gerar_mes()  # Chama a função para gerar o PDF
     menu_post_click.unpost()  # Fecha o menu de contexto
-################################################# USANDO O IMPRESSAO DOS DADOS CLIENTES X RECIBO ACIMA ########################
-
 
 
 # BACKUP DO BANCO DE DADOS DO SISTEMA
@@ -2714,7 +2807,6 @@ def criar_janela_principal():
 criar_janela_principal()
 
 
-
 # BACKUP DENTRO DO SISTEMA para SALVAR TODOS OS ARQUIVOS DENTRO DA PASTA BACKUP
 import os
 import subprocess
@@ -2724,7 +2816,6 @@ from tkinter import ttk
 from tkinter import filedialog
 import zipfile
 import shutil
-
 def realizar_backup_2():
     # Função para atualizar a barra de progresso
     def atualizar_progresso(stdout_line):
@@ -2825,10 +2916,10 @@ def acesso_remoto():
 
 
 ########################################## CRIANDO A JANELA PRINCIPAL ABAIXO#####################
-# Criando a janela principal
 janela_principal = tk.Tk()
 janela_principal.title("Gerenciador de Recibos - GDI")
 janela_principal.geometry("1260x750+5+5")
+janela_principal.iconbitmap("icon.ico")
 
 # Criando o menu
 menu_bar = tk.Menu(janela_principal)
@@ -2941,7 +3032,6 @@ menu_post_click.add_command(label="Impressão PADRAO", command=gerar_recibo_padr
 menu_post_click.add_separator()  # Adiciona uma linha de separação
 menu_post_click.add_command(label="REIMPRESSAO com DATA de HOJE", command=gerar_recibo_padrao_data)
 
-
 menu_post_click.add_separator()  # Adiciona uma linha de separação
 menu_post_click.add_command(label="Impressão Simples", command=gerar_e_fechar)
 
@@ -2950,8 +3040,3 @@ menu_post_click.add_command(label="Fechar", command=fechar_menu)
 
 
 janela_principal.mainloop()
-
-
-
-
-
