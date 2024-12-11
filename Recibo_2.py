@@ -497,8 +497,8 @@ def abrir_janela_inclusao():  # INCLUSAO DE RECIBO MANUAL
             valor_liquido_formatado = f"{valor_liquido:.2f}"
 
         # Garantindo que campos opcionais como 'referente', 'observacao', etc., sejam preenchidos corretamente
-            referente = campo_referente_inclusao.get() or None
-            observacao = campo_observacao_inclusao.get() or None
+            referente = campo_referente_inclusao.get().strip() or ""
+            observacao = campo_observacao_inclusao.get().strip() or ""
            
         # Query de inserção
             query = '''
@@ -692,7 +692,7 @@ def editar_recibo():
                 conexao.close()
 
                 atualizar_árvore()
-                messagebox.showinfo("Sucesso", f"EDIÇÃO RECIBO {id_recibo}, Salvo com Sucesso!")
+                messagebox.showinfo("Sucesso", f"EDIÇÃO RECIBO Nº {id_recibo}, Salvo com Sucesso!")
                 janela_editar.destroy()
 
             except mysql.connector.Error as e:
@@ -1223,11 +1223,13 @@ def editar_parametros():
     # Cria a janela principal
     janela_edicao = tk.Tk()
     janela_edicao.title("Editar Conteudo Parâmetros")
+    janela_edicao.geometry("350x240")  # Aumentei a altura para caber a lista de usuários
+    janela_edicao.resizable(False, False)  # Desabilitar redimensionamento da janela
 
     # Cria um Text widget para exibir e editar o conteúdo do arquivo
     global text_area
-    text_area = tk.Text(janela_edicao, width=50, height=20)
-    text_area.pack(pady=10)
+    text_area = tk.Text(janela_edicao, width=50, height=10)
+    text_area.grid(row=0, column=0, padx=10, pady=10)  # Usando grid para o Text widget
 
     # Carrega o conteúdo do arquivo no Text widget
     conteudo = carregar_parametros()
@@ -1235,20 +1237,19 @@ def editar_parametros():
 
     # Botão para salvar as alterações
     salvar_button = tk.Button(janela_edicao, 
-                          text="Salvar Alterações", 
-                          command=lambda: salvar_parametros(janela_edicao),
-                          bg="green",  # Cor de fundo (verde)
-                          fg="white")  # Cor da fonte (branca)
-    salvar_button.pack(pady=5)
-    
+                              text="Salvar Alterações", 
+                              command=lambda: salvar_parametros(janela_edicao),
+                              bg="green",  # Cor de fundo (verde)
+                              fg="white")  # Cor da fonte (branca)
+    salvar_button.grid(row=1, column=0, pady=5)  # Usando grid para o botão de salvar
 
     # Exibe a janela
     janela_edicao.mainloop()
 
 # Função que exibe a mensagem de informações e permite editar o arquivo
 def opcoes_sistema():
-    messagebox.showinfo(" Opções em Construção!", "DÚVIDAS: (54) 9 9104-1029")
     editar_parametros()  # Chama a função que permite editar o arquivo
+
 
 ########################################################################################################################################################
 
@@ -1270,17 +1271,17 @@ def salvar_cliente():
 
         nome = campo_nome_inclusao.get()
         fantasia = campo_fantasia_inclusao.get() or ''
-        cpfcnpj = campo_cpfcnpj_inclusao.get() or None
-        ie = campo_ie_inclusao.get() or None
-        contato = campo_contato_inclusao.get() or None
-        email = campo_email_inclusao.get() or None
-        telefone1 = campo_telefone1_inclusao.get() or None
-        telefone2 = campo_telefone2_inclusao.get() or None
+        cpfcnpj = campo_cpfcnpj_inclusao.get() or ''
+        ie = campo_ie_inclusao.get() or ''
+        contato = campo_contato_inclusao.get() or ''
+        email = campo_email_inclusao.get() or ''
+        telefone1 = campo_telefone1_inclusao.get() or ''
+        telefone2 = campo_telefone2_inclusao.get() or ''
         endereco = campo_endereco_inclusao.get()
-        numero = campo_numero_inclusao.get() or None
-        complemento = campo_complemento_inclusao.get() or None
-        bairro = campo_bairro_inclusao.get() or None
-        cidade = campo_cidade_inclusao.get() or None
+        numero = campo_numero_inclusao.get() or ''
+        complemento = campo_complemento_inclusao.get() or ''
+        bairro = campo_bairro_inclusao.get() or ''
+        cidade = campo_cidade_inclusao.get() or ''
         aluguel = campo_aluguel_inclusao.get()
         agua = campo_agua_inclusao.get() or None
         luz = campo_luz_inclusao.get() or None
@@ -1290,8 +1291,7 @@ def salvar_cliente():
         limpeza = campo_limpeza_inclusao.get() or None
         outros = campo_outros_inclusao.get() or None
         descontos = campo_descontos_inclusao.get() or None
-        referente = campo_referente_inclusao.get() or None
-
+        referente = campo_referente_inclusao.get() or ''
         # Inserir data automaticamente
         data = datetime.now().strftime('%Y-%m-%d')
 
@@ -2442,7 +2442,7 @@ def gerar_recibo_padrao():  # SELECIONA O ID_RECIBO E PREVISUALIZA O RECIBO PADR
         c.save()
 
         # Mostrar mensagem de sucesso
-        messagebox.showinfo("Recibo Gerado", f"Recibo Padrao {id_recibo}, Gerado com Sucesso!")
+        messagebox.showinfo("Recibo Gerado", f"Recibo Padrao Nº {id_recibo}, Gerado com Sucesso!")
         os.startfile(nome_arquivo)
 
     except Exception as e:
@@ -2807,95 +2807,117 @@ def criar_janela_principal():
 criar_janela_principal()
 
 
-# BACKUP DENTRO DO SISTEMA para SALVAR TODOS OS ARQUIVOS DENTRO DA PASTA BACKUP
+# backup dos arquivo todos
 import os
-import subprocess
+import shutil
 import tkinter as tk
-from tkinter import messagebox
-from tkinter import ttk
 from tkinter import filedialog
 import zipfile
-import shutil
+import threading
+
 def realizar_backup_2():
-    # Função para atualizar a barra de progresso
-    def atualizar_progresso(stdout_line):
-        if "Copiados" in stdout_line:
-            # Extrai o número de arquivos copiados a partir da saída do robocopy
-            partes = stdout_line.split()
-            if len(partes) > 3 and partes[2].isdigit():
-                arquivos_copiados = int(partes[2])
-                progresso['value'] = arquivos_copiados
-                root.update_idletasks()
+    # Função para atualizar a lista de arquivos copiados na interface
+    def atualizar_progresso(arquivo, progresso_text):
+        progresso_text.insert(tk.END, f"Copiando Arquivo: {arquivo}\n")
+        progresso_text.yview(tk.END)  # Faz a janela rolar para mostrar o arquivo mais recente
+        progresso_text.update_idletasks()  # Atualiza a interface gráfica
 
-    try:
-        # Caminho de origem dos arquivos
-        origem = "C:\\Sigeflex\\recibo"  # Diretório de origem (os arquivos que você quer salvar)
+    def backup_thread(destino, progresso_text, root, status_label, ok_button):
+        try:
+            # Caminho de origem dos arquivos
+            origem = "C:\\Sigeflex\\recibo"  # Diretório de origem (os arquivos que você quer salvar)
 
-        # Permitir que o usuário escolha o diretório de destino
-        destino = filedialog.askdirectory(title="Escolha o diretório de destino")
-        
-        # Verifica se o usuário cancelou a escolha do diretório
-        if not destino:
-            raise Exception("Nenhum diretório de destino foi selecionado.")
+            # Nome do arquivo ZIP
+            nome_arquivo_zip = "Backup_Sistema.zip"
+            caminho_arquivo_zip = os.path.join(destino, nome_arquivo_zip)
 
-        # Verifica se o diretório de destino existe, senão cria
-        if not os.path.exists(destino):
-            os.makedirs(destino)
+            # Criando o diretório de backup temporário
+            temp_backup_dir = os.path.join(destino, "temp_backup")
+            if not os.path.exists(temp_backup_dir):
+                os.makedirs(temp_backup_dir)
 
-        # Nome do arquivo ZIP
-        nome_arquivo_zip = "Backup_Sistema.zip"
-        caminho_arquivo_zip = os.path.join(destino, nome_arquivo_zip)
+            # Usando os.walk para copiar os arquivos um por um
+            total_arquivos = 0
+            for root_dir, dirs, files in os.walk(origem):
+                total_arquivos += len(files)
 
-        # Inicia a interface gráfica
-        root = tk.Tk()
-        root.title("Backup em Progresso")
-        
-        # Label de status
-        label_status = tk.Label(root, text="Backup em Progresso...", padx=10, pady=10)
-        label_status.pack()
+            arquivos_copiados = 0  # Inicializa o contador de arquivos copiados
 
-        # Barra de progresso
-        progresso = ttk.Progressbar(root, orient="horizontal", length=300, mode="determinate")
-        progresso.pack(padx=10, pady=10)
+            # Percorrer todos os arquivos e copiar um por um
+            for root_dir, dirs, files in os.walk(origem):
+                for file in files:
+                    caminho_arquivo_origem = os.path.join(root_dir, file)
+                    caminho_arquivo_destino = os.path.join(temp_backup_dir, os.path.relpath(caminho_arquivo_origem, origem))
 
-        # Comando robocopy para copiar arquivos, com opções para substituir arquivos existentes
-        comando_backup = f'robocopy "{origem}" "{destino}\\temp_backup" /E /Z /R:3 /W:5 /IS /IT'
+                    # Cria a pasta no destino, se necessário
+                    os.makedirs(os.path.dirname(caminho_arquivo_destino), exist_ok=True)
 
-        # Executando o comando de backup dos arquivos, capturando a saída em tempo real
-        processo = subprocess.Popen(comando_backup, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    # Copia o arquivo
+                    shutil.copy2(caminho_arquivo_origem, caminho_arquivo_destino)
 
-        # Loop para ler a saída em tempo real e atualizar a barra de progresso
-        for stdout_line in processo.stdout:
-            atualizar_progresso(stdout_line)
+                    # Atualiza o progresso
+                    arquivos_copiados += 1
+                    atualizar_progresso(file, progresso_text)
 
-        # Aguarda o término do processo
-        processo.communicate()
-
-        # Ignorar códigos de erro que não sejam críticos (3 ou menores)
-        if processo.returncode <= 3:
             # Compactar os arquivos copiados para um arquivo ZIP
             with zipfile.ZipFile(caminho_arquivo_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                for root_dir, dirs, files in os.walk(os.path.join(destino, "temp_backup")):
+                for root_dir, dirs, files in os.walk(temp_backup_dir):
                     for file in files:
-                        zipf.write(os.path.join(root_dir, file), os.path.relpath(os.path.join(root_dir, file), os.path.join(destino, "temp_backup")))
+                        zipf.write(os.path.join(root_dir, file), os.path.relpath(os.path.join(root_dir, file), temp_backup_dir))
 
             # Exclui o diretório temporário após a compactação
-            shutil.rmtree(os.path.join(destino, "temp_backup"))
+            shutil.rmtree(temp_backup_dir)
 
-            messagebox.showinfo("Backup Realizado com Sucesso", f"Todos Arquivos da Pasta do Sistema, foi Salvo em {caminho_arquivo_zip}")
-        
-        else:
-            # Se houver um erro fatal (código maior que 3), exibe um erro
-            raise Exception(f"Erro no processo de backup. Código de erro: {processo.returncode}")
+            # Atualiza a mensagem de status para sucesso
+            status_label.config(text="Backup de Arquivos do Sistema! Salvos com Sucesso!", fg="green")
+            ok_button.grid(row=2, column=0, padx=10, pady=10)  # Exibe o botão OK
 
-    except Exception as e:
-        # Se houver um erro, exibe uma mensagem de erro
-        messagebox.showerror("Erro", f"Erro ao realizar o backup: {e}")
+        except Exception as e:
+            # Se houver um erro, exibe uma mensagem de erro na mesma janela
+            status_label.config(text=f"Erro: {e}", fg="red")
+            ok_button.grid(row=2, column=0, padx=10, pady=10)  # Exibe o botão OK em caso de erro
 
-    finally:
-        # Garante que a janela será fechada independentemente de sucesso ou falha
-        root.destroy()  # Fecha a janela de progresso
-   
+    # Função para escolher o diretório e iniciar o processo de backup
+    def iniciar_backup():
+        # Permitir que o usuário escolha o diretório de destino
+        destino = filedialog.askdirectory(title="Escolha a Pasta para Salvar o Backup")
+
+        # Verifica se o usuário cancelou a escolha do diretório
+        if not destino:
+            return  # Se o usuário não escolheu um diretório, retorna sem fazer o backup
+
+        # Inicia a interface gráfica para mostrar o progresso do backup
+        root = tk.Tk()
+        root.title("Backup em Progresso")
+        root.geometry("425x280")  # Aumentei o tamanho da janela para acomodar a informação
+        root.resizable(False, False)
+        root.iconbitmap("icon.ico")
+
+        # Adicionando o campo de texto (Text) para exibir o progresso
+        progresso_text = tk.Text(root, height=10, width=50, wrap=tk.WORD)
+        progresso_text.grid(row=0, column=0, padx=10, pady=10)
+
+        # Label para mostrar o status do backup (concluído ou erro)
+        status_label = tk.Label(root, text="Copiando Arquivos ...", padx=8, pady=8)
+        status_label.grid(row=1, column=0, padx=10, pady=10)
+
+        # Botão OK, que será mostrado quando o backup for concluído ou houver erro
+        ok_button = tk.Button(root, text="OK", command=root.destroy, bg="green", fg="white")
+        ok_button.grid_forget()  # Esconde o botão inicialmente
+
+        # Começa o processo de backup em uma thread separada para não bloquear a interface
+        threading.Thread(target=backup_thread, args=(destino, progresso_text, root, status_label, ok_button), daemon=True).start()
+
+        # Garantir que a janela de progresso fique na frente
+        root.lift()  # Faz a janela "subir" para frente
+        root.attributes("-topmost", True)  # Faz a janela ficar sempre na frente
+
+        # Inicia o loop da interface gráfica
+        root.mainloop()
+
+    # Chama a função para iniciar o backup
+    iniciar_backup()
+
   
 #################################### CRIADO ACIMA BACKUP INTERNO NO SISTEMA PARA SALVAR EM X PASTA QUE ESCOLHER
 
