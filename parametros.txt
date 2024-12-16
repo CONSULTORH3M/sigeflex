@@ -1,2 +1,20 @@
-PADRAO
-3
+Fantasia: IMOBILIARIA LIDER
+Nome: IMOBILIARIA LIDER LTDA
+CNPJ: 10.650.902/0001-97
+Telefone: (55)9 8116 - 9772
+Email: marcelobeutler@gmail.com
+Endereco: Rua Tiradentes, 606 Centro Cep 98995-000 PORO XAVIER - RS SALA B
+Numeracao Recibo: 447
+Mensagem: "IMÓVEL SÓ COM O CORRETOR"
+##########################################################################
+INFORMAÇÕES UTEIS
+Caminho LOGO1 : C\SIGEFLEX\LOGO1
+Caminho LOGO2 : C\SIGEFLEX\LOGO2
+Caminho Backup : C\SIGEFLEX\BACKUP
+Ramo de Atividade : IMOBILIARIA
+Sequência Recibo MANUAL : 21
+TOTAL CLIENTES : 95
+Formas de Pagamento : DINHEIRO / PIX / CARTAO DE CRÉDITO
+Observações : "VERSAO 2024.2 em 13/12/2024"
+Usuário: PADRAO
+
