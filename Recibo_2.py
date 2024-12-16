@@ -111,28 +111,43 @@ def salvar_ultimo_usuario(usuario):
         while len(linhas) < 1:
             linhas.append("")  # Adiciona linhas em branco se necessário
 
-        # Atualiza a primeira linha (onde o usuário será salvo)
-        linhas[0] = usuario + "\n"  # A linha 0 (índice 0) é onde o último usuário ficará
+        # Procura e atualiza a linha que contém 'Usuário: PADRAO'
+        for i, linha in enumerate(linhas):
+            if "Usuário: " in linha:
+                linhas[i] = f"Usuário: {usuario}\n"  # Atualiza a linha do usuário
 
         # Escreve as linhas de volta no arquivo, preservando as outras informações
         with open("parametros.txt", "w") as f:
-            f.writelines(linhas)  # Grava todas as linhas de volta no arquivo, mantendo as outras informações
+            f.writelines(linhas)  # Grava todas as linhas de volta no arquivo
 
     except Exception as e:
         print(f"Erro ao salvar o último usuário: {e}")
+
         
 # Função para carregar o último usuário do arquivo
 def carregar_ultimo_usuario():
     try:
         with open("parametros.txt", "r") as f:
             linhas = f.readlines()
-            if len(linhas) >= 1:
-                ultimo_usuario = linhas[0].strip()  # A primeira linha contém o último usuário
-                return ultimo_usuario
+            if len(linhas) >= 18:
+                primeiro_linha = linhas[18].strip()
+                print(f"dezenove linha do Arquvio: '{primeiro_linha}'")  # Debug para ver o conteúdo
+                
+                # Verifica se a linha começa com "Usuário: " (ou "Usuários: ", dependendo do formato do arquivo)
+                if primeiro_linha.startswith("Usuário: "):  # Corrigido para "Usuário: " ou "Usuários: "
+                    # Remove "Usuário: " ou "Usuários: " e qualquer espaço extra
+                    ultimo_usuario = primeiro_linha.replace("Usuário: ", "").strip()  # Agora ele deve pegar só o nome
+                    return ultimo_usuario
+                else:
+                    return None  # Caso o formato esperado não seja encontrado
             else:
-                return None  # Se não houver linha 1, retorna None
+                return None  # Se não houver linhas, retorna None
     except FileNotFoundError:
-        return None  # Se o arquivo não existir, retorna None
+        return None  # Se o arquivo não for encontrado, retorna None
+    except Exception as e:
+        print(f"Erro ao carregar o último usuário: {e}")
+        return None  # Retorna None caso ocorra outro erro
+
 
 # Função para encerrar o programa
 def on_close():
@@ -341,7 +356,7 @@ def abrir_janela_inclusao():  # INCLUSAO DE RECIBO MANUAL
     janela_inclusao.grid_columnconfigure(1, weight=3, minsize=200)
     
     # Configurando o peso das linhas para garantir que a última linha (onde os botões estão) tenha mais espaço
-    for i in range(16):  # Configurando peso para as linhas, até a linha 15
+    for i in range(16):  # Configurando peso para as linhas, até a linha 16
         janela_inclusao.grid_rowconfigure(i, weight=1)
 
     # Definindo os campos de entrada
@@ -512,6 +527,8 @@ def abrir_janela_inclusao():  # INCLUSAO DE RECIBO MANUAL
                 luz_formatado, condominio_formatado, iptu_formatado, internet_formatado, limpeza_formatado,
                 outros_formatado, descontos_formatado, observacao
         ))
+            
+            id_recibo = cursor.lastrowid
 
         # Commit na transação e fechamento da conexão
             conn.commit()
@@ -519,11 +536,40 @@ def abrir_janela_inclusao():  # INCLUSAO DE RECIBO MANUAL
             conn.close()
 
         # Mensagem de sucesso
-            messagebox.showinfo("Sucesso", "NOVO Recibo, Salvo com Sucesso!")
+            messagebox.showinfo("Sucesso", f"NOVO Recibo, Salvo com Sucesso!\nID do Recibo: {id_recibo}")
             janela_inclusao.destroy()
 
         except mysql.connector.Error as err:
             messagebox.showerror("Erro", f"Erro ao conectar ao banco de dados: {err}")
+
+    # Agora, chama a função para atualizar o arquivo 'parametros.txt'
+        atualizar_parametros_txt(id_recibo)
+
+        # Fecha a janela de inclusão
+        janela_inclusao.destroy()
+
+    
+    def atualizar_parametros_txt(id_recibo):
+        try:
+        # Lê o conteúdo do arquivo parametros.txt
+            with open('parametros.txt', 'r') as file:
+                linhas = file.readlines()
+
+        # Encontra e atualiza a linha específica para "Sequência Recibo MANUAL"
+            for i, linha in enumerate(linhas):
+                if "Sequência Recibo MANUAL" in linha:
+                # Atualiza a linha com o novo valor
+                    linhas[i] = f"Sequência Recibo MANUAL : {id_recibo}\n"
+                    break
+
+        # Grava as alterações de volta no arquivo
+            with open('parametros.txt', 'w') as file:
+                file.writelines(linhas)
+
+            print("Arquivo 'parametros.txt' atualizado com sucesso.")
+
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro ao atualizar o arquivo parametros.txt: {e}")
            
 
     ##################### CRIANDO OS BOTÕES NA PARTE INFERIOR NA INCLUSAO DOS RECIBOS MANUAL ##################################################
@@ -1194,66 +1240,269 @@ def gerar_Rel_Cliente():
 
 # RELATORIO DE RECIBOS POR X CLIENTE ACIMA
 
-############################################################OPCOES DO SISTEMA #################
-# OPÇOES DO SISTEMA
+############################################################ PREFERENCIAS #################
+# DADOS EMPRESA
 import tkinter as tk
 from tkinter import messagebox
 
-# Função para carregar o conteúdo de parametros.txt
-def carregar_parametros():
+# Função para carregar os dados do arquivo 'parametros.txt'
+def carregar_dados_empresa():
     try:
         with open('parametros.txt', 'r') as file:
-            conteudo = file.read()
+            conteudo = file.read().splitlines()  # Lê o conteúdo e divide em linhas
         return conteudo
     except Exception as e:
-        return "Erro ao ler o arquivo: " + str(e)
+        return ["Erro ao ler o arquivo: " + str(e)]
 
-# Função para salvar as alterações no parametros.txt
-def salvar_parametros(janela_edicao):
+# Função para salvar os dados no arquivo 'parametros.txt'
+def salvar_dados_empresa(fantasia, nome, cnpj, telefone, email, endereco, usuario, numeracao_recibo, mensagem, janela_edicao):
     try:
+        # Carrega o conteúdo atual do arquivo
+        with open('parametros.txt', 'r') as file:
+            conteudo = file.read().splitlines()
+
+        # Modifica as primeiras 8 linhas com os novos dados
+        conteudo[0] = f"Fantasia: {fantasia}"
+        conteudo[1] = f"Nome: {nome}"
+        conteudo[2] = f"CNPJ: {cnpj}"
+        conteudo[3] = f"Telefone: {telefone}"
+        conteudo[4] = f"Email: {email}"
+        conteudo[5] = f"Endereco: {endereco}"
+        conteudo[6] = f"Numeracao Recibo: {numeracao_recibo}"
+        conteudo[7] = f"Mensagem: {mensagem}"
+
+        # Reabre o arquivo para salvar as modificações
         with open('parametros.txt', 'w') as file:
-            file.write(text_area.get("1.0", tk.END))  # Pega todo o conteúdo do Text e salva no arquivo
-        messagebox.showinfo("Sucesso", "Informações Salvas com Sucesso!")
+            # Escreve as 7 primeiras linhas modificadas
+            file.write("\n".join(conteudo[:8]) + "\n")
+
+            # Mantém o conteúdo do restante do arquivo (as opções e linhas posteriores)
+            file.write("\n".join(conteudo[8:]) + "\n")
+
+        messagebox.showinfo("Sucesso", "Dados da Empresa, Salvos com Sucesso!")
         janela_edicao.destroy()  # Fecha a janela após salvar
     except Exception as e:
         messagebox.showerror("Erro", f"Erro ao Salvar o Arquivo: {e}")
 
-# Função que abre a tela de edição e exibe o conteúdo do arquivo
-def editar_parametros():
+# Função para editar os dados da empresa
+def editar_dados_empresa_com_campos():
     # Cria a janela principal
     janela_edicao = tk.Tk()
-    janela_edicao.title("Editar Conteudo Parâmetros")
-    janela_edicao.geometry("350x240")  # Aumentei a altura para caber a lista de usuários
-    janela_edicao.resizable(False, False)  # Desabilitar redimensionamento da janela
+    janela_edicao.title("Dados da Empresa")
+    janela_edicao.geometry("620x380")  # Ajuste no tamanho da janela
+    janela_edicao.iconbitmap("icon.ico")
 
-    # Cria um Text widget para exibir e editar o conteúdo do arquivo
-    global text_area
-    text_area = tk.Text(janela_edicao, width=50, height=10)
-    text_area.grid(row=0, column=0, padx=10, pady=10)  # Usando grid para o Text widget
 
-    # Carrega o conteúdo do arquivo no Text widget
-    conteudo = carregar_parametros()
-    text_area.insert(tk.END, conteudo)
+    # Lê os dados do arquivo
+    dados_empresa = carregar_dados_empresa()
+    
+    # Verifica se houve erro ao carregar o arquivo
+    if dados_empresa[0].startswith("Erro"):
+        messagebox.showerror("Erro", dados_empresa[0])
+        janela_edicao.destroy()
+        return
+    
+    # Inicializa variáveis para preencher os campos com os dados
+    fantasia = ""
+    nome = ""
+    cnpj = ""
+    telefone = ""
+    email = ""
+    endereco = ""
+    numeracao_recibo = ""
+    mensagem = ""
+    
+    # Preenche as variáveis com os dados lidos
+    for linha in dados_empresa:
+        if linha.startswith("Fantasia:"):
+            usuario = linha.replace("Fantasia: ", "").strip()
+        elif linha.startswith("Nome:"):
+            nome = linha.replace("Nome: ", "").strip()
+        elif linha.startswith("CNPJ:"):
+            cnpj = linha.replace("CNPJ: ", "").strip()
+        elif linha.startswith("Telefone:"):
+            telefone = linha.replace("Telefone: ", "").strip()
+        elif linha.startswith("Email:"):
+            email = linha.replace("Email: ", "").strip()
+        elif linha.startswith("Endereco:"):
+            endereco = linha.replace("Endereco: ", "").strip()
 
-    # Botão para salvar as alterações
+        elif linha.startswith("Numeracao Recibo:"):
+            numeracao_recibo = linha.replace("Numeracao Recibo: ", "").strip()    
+        elif linha.startswith("Mensagem:"):
+            mensagem = linha.replace("Mensagem: ", "").strip()
+
+    # Labels e Entradas para os dados
+    tk.Label(janela_edicao, text="Fantasia:").grid(row=0, column=0, padx=10, pady=10, sticky="e")
+    entry_fantasia = tk.Entry(janela_edicao, width=40)
+    entry_fantasia.grid(row=0, column=1, padx=10, pady=10)
+    entry_fantasia.insert(0, usuario)  # Preenche o campo com o valor lido
+
+    tk.Label(janela_edicao, text="RAZAO SOCIAL :").grid(row=1, column=0, padx=10, pady=10, sticky="e")
+    entry_nome = tk.Entry(janela_edicao, width=40)
+    entry_nome.grid(row=1, column=1, padx=10, pady=10)
+    entry_nome.insert(0, nome)  # Preenche o campo com o valor lido
+
+    tk.Label(janela_edicao, text="CNPJ:").grid(row=2, column=0, padx=10, pady=10, sticky="e")
+    entry_cnpj = tk.Entry(janela_edicao, width=20)
+    entry_cnpj.grid(row=2, column=1, padx=10, pady=10)
+    entry_cnpj.insert(0, cnpj)  # Preenche o campo com o valor lido
+
+    tk.Label(janela_edicao, text="Telefone:").grid(row=3, column=0, padx=10, pady=10, sticky="e")
+    entry_telefone = tk.Entry(janela_edicao, width=20)
+    entry_telefone.grid(row=3, column=1, padx=10, pady=10)
+    entry_telefone.insert(0, telefone)  # Preenche o campo com o valor lido
+
+    tk.Label(janela_edicao, text="Email:").grid(row=4, column=0, padx=10, pady=10, sticky="e")
+    entry_email = tk.Entry(janela_edicao, width=40)
+    entry_email.grid(row=4, column=1, padx=10, pady=10)
+    entry_email.insert(0, email)  # Preenche o campo com o valor lido
+
+    tk.Label(janela_edicao, text="Endereço:").grid(row=5, column=0, padx=10, pady=10, sticky="e")
+    entry_endereco = tk.Entry(janela_edicao, width=70)
+    entry_endereco.grid(row=5, column=1, padx=10, pady=10)
+    entry_endereco.insert(0, endereco)  # Preenche o campo com o valor lido
+
+    tk.Label(janela_edicao, text="Numero Recibo Clientes (L):").grid(row=6, column=0, padx=10, pady=10, sticky="e")
+    entry_numeracao = tk.Entry(janela_edicao, width=10)
+    entry_numeracao.grid(row=6, column=1, padx=10, pady=10)
+    entry_numeracao.insert(0, numeracao_recibo)  # Preenche o campo com o valor lido
+
+    tk.Label(janela_edicao, text="Mensagem:").grid(row=7, column=0, padx=10, pady=10, sticky="e")
+    entry_mensagem = tk.Entry(janela_edicao, width=60)
+    entry_mensagem.grid(row=7, column=1, padx=10, pady=10)
+    entry_mensagem.insert(0, mensagem)  # Preenche o campo com o valor lido
+
+    # Função para salvar as informações editadas
     salvar_button = tk.Button(janela_edicao, 
-                              text="Salvar Alterações", 
-                              command=lambda: salvar_parametros(janela_edicao),
-                              bg="green",  # Cor de fundo (verde)
-                              fg="white")  # Cor da fonte (branca)
-    salvar_button.grid(row=1, column=0, pady=5)  # Usando grid para o botão de salvar
+                              text="Salvar", 
+                              command=lambda: salvar_dados_empresa(
+                                  entry_fantasia.get(),
+                                  entry_nome.get(),
+                                  entry_cnpj.get(),  
+                                  entry_telefone.get(), 
+                                  entry_email.get(), 
+                                  entry_endereco.get(),
+                                  entry_usuario.get(), 
+                                  entry_numeracao.get(),
+                                  entry_mensagem.get(), 
+                                  janela_edicao
+                              ),
+                              bg="green", fg="white")  # Cor de fundo (verde), cor da fonte (branca)
+    salvar_button.grid(row=8, column=1, pady=15, sticky="e")
 
     # Exibe a janela
     janela_edicao.mainloop()
 
-# Função que exibe a mensagem de informações e permite editar o arquivo
-def opcoes_sistema():
-    editar_parametros()  # Chama a função que permite editar o arquivo
+
+# Função principal para abrir a tela de opções do sistema
+def carregar_opcoes_sistema():
+    try:
+        with open('parametros.txt', 'r') as file:
+            conteudo = file.read().splitlines()  # Lê o conteúdo e divide em linhas
+
+        dados_opcoes = {}
+        encontrou_opcoes = False
+
+        # Começar a leitura a partir da linha 10 (ou seja, após "OPCOES SISTEMA")
+        for i, linha in enumerate(conteudo):
+            if i >= 9:  # A linha 10 é a linha de índice 9 (pois começa de 0)
+                # Verifica se encontramos as opções do sistema
+                if linha.startswith("Caminho LOGO1 :"):
+                    dados_opcoes["caminho_logo1"] = linha.replace("Caminho LOGO1 : ", "").strip()
+
+                elif linha.startswith("Caminho LOGO2 :"):
+                    dados_opcoes["caminho_logo2"] = linha.replace("Caminho LOGO2 : ", "").strip()
+
+                elif linha.startswith("Caminho Backup :"):
+                    dados_opcoes["caminho_backup"] = linha.replace("Caminho Backup : ", "").strip()
+                
+                elif linha.startswith("Ramo de Atividade :"):
+                    dados_opcoes["ramo_atividade"] = linha.replace("Ramo de Atividade : ", "").strip()
+
+                elif linha.startswith("TOTAL CLIENTES :"):
+                    dados_opcoes["total_clientes"] = linha.replace("TOTAL CLIENTES : ", "").strip()    
+                
+                elif linha.startswith("Sequência Recibo MANUAL :"): 
+                     dados_opcoes["sequencia_recibo_manual"] = linha.replace("Sequência Recibo MANUAL : ", "").strip()
+                
+                elif linha.startswith("Formas de Pagamento :"):
+                    dados_opcoes["formas_pagamento"] = linha.replace("Formas de Pagamento : ", "").strip()
+
+                elif linha.startswith("Observações :"):
+                    dados_opcoes["observacoes_opcoes"] = linha.replace("Observações : ", "").strip()
+
+        return dados_opcoes
+    except Exception as e:
+        return {"Erro": f"Erro ao ler o arquivo: {e}"}
 
 
+# FUNCAO QUE SALVA AS OPÇOCES
+import tkinter as tk
+from tkinter import messagebox
+
+def editar_opcoes():
+    # Cria a janela principal
+    janela_edicao1 = tk.Tk()
+    janela_edicao1.title("Informações Uteis")
+    janela_edicao1.geometry("480x290")  # Ajuste no tamanho da janela
+    janela_edicao1.resizable(False, False)
+    janela_edicao1.iconbitmap("icon.ico")
+
+
+    # Carrega as opções do sistema
+    dados_opcoes = carregar_opcoes_sistema()
+
+    # Verifica se houve erro ao carregar os dados
+    if "Erro" in dados_opcoes:
+        messagebox.showerror("Erro", dados_opcoes["Erro"])
+        janela_edicao1.destroy()
+        return
+
+    # Campos para as opções do sistema
+    tk.Label(janela_edicao1, text="Caminho LOGO1:").grid(row=7, column=0, padx=10, pady=10, sticky="e")
+# Use tk.Label em vez de tk.Entry
+    label_logo1 = tk.Label(janela_edicao1, width=40, text=dados_opcoes.get("caminho_logo1", ""))
+    label_logo1.grid(row=7, column=1, padx=10, pady=10)
+
+    tk.Label(janela_edicao1, text="Caminho LOGO2:").grid(row=8, column=0, padx=10, pady=10, sticky="e")
+    label_logo2 = tk.Label(janela_edicao1, width=40, text=dados_opcoes.get("caminho_logo2", ""))
+    label_logo2.grid(row=8, column=1, padx=10, pady=10)
+
+    tk.Label(janela_edicao1, text="Caminho Backup:").grid(row=9, column=0, padx=10, pady=10, sticky="e")
+    label_backup = tk.Label(janela_edicao1, width=40, text=dados_opcoes.get("caminho_backup", ""))
+    label_backup.grid(row=9, column=1, padx=10, pady=10)
+
+    tk.Label(janela_edicao1, text="Ramo de Atividade:").grid(row=10, column=0, padx=10, pady=10, sticky="e")
+    label_ramo = tk.Label(janela_edicao1, width=40, text=dados_opcoes.get("ramo_atividade", ""))
+    label_ramo.grid(row=10, column=1, padx=10, pady=10)
+
+    tk.Label(janela_edicao1, text="TOTAL CLIENTES:").grid(row=11, column=0, padx=10, pady=10, sticky="e")
+    label_qtd_clientes = tk.Label(janela_edicao1, width=40, text=dados_opcoes.get("total_clientes", ""))
+    label_qtd_clientes.grid(row=11, column=1, padx=10, pady=10)
+
+    tk.Label(janela_edicao1, text="Sequência Recibo MANUAL:").grid(row=12, column=0, padx=10, pady=10, sticky="e")
+    label_seq_cliente_manual = tk.Label(janela_edicao1, width=10, text=dados_opcoes.get("sequencia_recibo_manual", ""))
+    label_seq_cliente_manual.grid(row=12, column=1, padx=10, pady=10)
+
+    tk.Label(janela_edicao1, text="Formas de Pagamento:").grid(row=13, column=0, padx=10, pady=10, sticky="e")
+    label_pagamento = tk.Label(janela_edicao1, width=40, text=dados_opcoes.get("formas_pagamento", ""))
+    label_pagamento.grid(row=13, column=1, padx=10, pady=10)
+
+    tk.Label(janela_edicao1, text="VERSAO SISTEMA:").grid(row=14, column=0, padx=10, pady=10, sticky="e")
+    label_obs = tk.Label(janela_edicao1, width=40, text=dados_opcoes.get("observacoes_opcoes", ""))
+    label_obs.grid(row=14, column=1, padx=10, pady=10)
+
+
+    # Exibe a janela
+    janela_edicao1.mainloop()
+
+
+def opcoes_sitema():
+    editar_opcoes()
 ########################################################################################################################################################
 
-###################################### CADASTRO DE CLIENTE # Função para salvar o cliente no banco de dados MySQL
+###################################### CADASTRO DE CLIENTE 
 import tkinter as tk
 from tkinter import messagebox
 import mysql.connector
@@ -1520,50 +1769,144 @@ def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
 
 
 ################################################################################################################################
-####################################################### GERADO RECIBO PADRAO CONVERTNDO O VALOR PARA A EXTENSAO
+##############################GERADO RECIBO PADRAO CONVERTENDO O VALOR PARA A EXTENSAO ############################
+import mysql.connector
+from num2words import num2words  # Para converter números por extenso
+from tkinter import messagebox
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from reportlab.lib import colors
 from datetime import datetime
-from tkinter import messagebox
 import os
-from num2words import num2words  
+
 # Função para converter número para por extenso
 def numero_por_extenso(valor):
     return num2words(valor, lang='pt_BR')
 
+# Função para obter a configuração do host a partir de um arquivo 'config.ini'
+import configparser
+
+def obter_host_config():
+    config = configparser.ConfigParser()
+    config.read('config.ini')
+    
+    # Obtém o valor da chave 'host' da seção 'database'
+    return config.get('mysql', 'host')
+
 # Função para gerar e atualizar o ID do recibo
-import os
+def atualizar_numeracao_recibo(numeracao_recibo):
+    try:
+        # Carregar o conteúdo atual do arquivo
+        with open('parametros.txt', 'r') as file:
+            conteudo = file.read().splitlines()
+
+        # Procurar e atualizar a linha "Numeracao Recibo"
+        for i, linha in enumerate(conteudo):
+            if linha.startswith("Numeracao Recibo:"):
+                # Substitui o valor da linha pela nova numeracao
+                conteudo[i] = f"Numeracao Recibo: {numeracao_recibo}"
+                break
+        else:
+            # Se a linha não for encontrada, você pode adicionar no final do arquivo
+            conteudo.append(f"Numeracao Recibo: {numeracao_recibo}")
+
+        # Regravar as alterações no arquivo
+        with open('parametros.txt', 'w') as file:
+            file.write("\n".join(conteudo) + "\n")
+
+        print(f"Numeracao Recibo atualizado para {numeracao_recibo}.")
+
+    except Exception as e:
+        print(f"Erro ao atualizar a numeracao do recibo: {e}")
+
 
 def obter_id_recibo():
-    contador_path = "parametros.txt"
-    
-    # Verifica se o arquivo existe
-    if os.path.exists(contador_path):
-        with open(contador_path, "r") as f:
-            linhas = f.readlines()  # Lê todas as linhas do arquivo
+    try:
+        # Configurações do banco de dados MySQL
+        host = obter_host_config()  # Obtém o host do arquivo de configuração
+        user = 'root'               # Nome do usuário do MySQL
+        password = 'mysql147'       # Senha do MySQL
+        database = 'dados'
 
-            # Verifica se o arquivo tem pelo menos 2 linhas
-            if len(linhas) >= 2:
-                # Pega o valor da segunda linha e converte para inteiro
-                contador = int(linhas[1].strip())
-            else:
-                # Caso o arquivo tenha menos de 2 linhas, define um valor padrão (ex: 1)
+        # Estabelecendo conexão com o banco de dados
+        conn = mysql.connector.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=database
+        )
+
+        if conn.is_connected():
+            print("Conexão bem-sucedida ao banco de dados.")
+            cursor = conn.cursor()
+
+            # Tenta obter o contador da tabela 'parametros'
+            cursor.execute('SELECT contador FROM parametros WHERE id = 1')
+            resultado = cursor.fetchone()
+
+            if resultado is None:
+                # Se não encontrar um contador, cria um com o valor 1
                 contador = 1
-    else:
-        # Se o arquivo não existir, cria o arquivo e define o valor da segunda linha como 1
-        contador = 1
-        with open(contador_path, "w") as f:
-            f.write("0\n")  # Primeira linha (vazio ou algum valor)
-            f.write(str(contador))  # Segunda linha com o valor 1
+                cursor.execute('INSERT INTO parametros (id, contador) VALUES (1, %s)', (contador,))
+            else:
+                # Se o contador existir, pega o valor e incrementa
+                contador = resultado[0] + 1
+                cursor.execute('UPDATE parametros SET contador = %s WHERE id = 1', (contador,))
+
+            # Confirma as alterações no banco de dados
+            conn.commit()
+
+            # Fecha a conexão com o banco de dados
+            conn.close()
+
+            # Retorna o valor do contador + a palavra "Lider" para diferenciar
+            novo_id = " L_" + str(contador)
+            print("Novo ID de Recibo:", novo_id)
+
+            # Atualiza o contador no arquivo
+            atualizar_numeracao_recibo(contador)
+
+            return novo_id
+
+        else:
+            print("Falha na conexão com o banco de dados.")
+            return None
+
+    except mysql.connector.Error as e:
+        print(f"Erro ao conectar ao banco de dados: {e}")
+        return None
+
+# Função para salvar a sequência de recibo manual no arquivo
+def salvar_sequencia_recibo_manual(sequencia):
+    try:
+        # Carregar o conteúdo atual do arquivo
+        with open('parametros.txt', 'r') as file:
+            conteudo = file.read().splitlines()
+
+        # Atualiza a linha com a sequência de recibo manual
+        for i, linha in enumerate(conteudo):
+            if linha.startswith("Sequência Recibo MANUAL:"):
+                conteudo[i] = f"Sequência Recibo MANUAL: {sequencia}"
+                break
+        else:
+            conteudo.append(f"Sequência Recibo MANUAL: {sequencia}")
+
+        # Regrava o arquivo com a alteração
+        with open('parametros.txt', 'w') as file:
+            file.write("\n".join(conteudo) + "\n")
+
+        print(f"Sequência de Recibo MANUAL atualizada para {sequencia}.")
+
+    except Exception as e:
+        print(f"Erro ao salvar a sequência de Recibo MANUAL: {e}")
+
+
+
+
+# Exemplo de uso da função de obtenção do ID do recibo
+id_recibo = obter_id_recibo()
+print("Novo ID de Recibo:", id_recibo)
     
-    # Atualiza a segunda linha do arquivo (incrementando o valor)
-    contador += 1
-    with open(contador_path, "w") as f:
-        f.write("0\n")  # Mantém a primeira linha com "0" ou qualquer valor desejado
-        f.write(str(contador))  # Atualiza a segunda linha com o novo contador
-    
-    return contador - 1  # Retorna o valor da segunda linha antes de incrementar
 
 # FUNCAO PARA GERAR POR EXTENSO O VALOR DO ALUGUEL(VALOR PAGO)
 from num2words import num2words
@@ -1671,6 +2014,8 @@ def gerar_pdf(cliente):  # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE,
         descontos = campos_cliente["descontos"]
         referente = campos_cliente["referente"]
 
+        
+
         # Verificar se o NOME CLIENTE está no formato correto para o nome do arquivo
         if not nome or nome == "Não informado":
             messagebox.showerror("Erro", "O nome do cliente não está informado.")
@@ -1689,6 +2034,9 @@ def gerar_pdf(cliente):  # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE,
         # Dimensões da página
         page_width, page_height = letter
 
+        class CampoZeradoError(Exception):
+            pass  # Exceção customizada para o caso de erro no campo "VLR RECEBIDO"
+
         # Função para desenhar o logo
         def desenhar_logo(canvas, y_position):
             try:
@@ -1703,17 +2051,30 @@ def gerar_pdf(cliente):  # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE,
             except Exception as e:
                 print(f"Erro ao carregar o logo: {e}")
 
+        
+        import sys  # Para usar sys.exit()
+
         # Função para desenhar os dados financeiros no PDF
         def desenhar_pessoa(c, y_position, id, operacao, pessoa_dados):
             c.setFont("Helvetica", 10)
 
             try:
-                aluguel_valor = float(pessoa_dados[12])
-            except ValueError:
-                aluguel_valor = 0.0
+        # Verifica o valor de VALOR_LIQUIDO
+                valor_liquido = float(pessoa_dados[12])  # O valor do campo "VALOR_LIQUIDO" está no índice 12
+                if valor_liquido == 0.0 or valor_liquido == "None":
+            # Exibe a mensagem de erro e interrompe a execução
+                    messagebox.showerror("Ops", "O Campo 'VLR RECEBIDO' está Zerado. Não foi calculado.")
+                    raise CampoZeradoError("Favor Atualizar os Valores, antes de Gerar o Recibo")  # Levanta a exceção para interromper o processo
 
-            aluguel_por_extenso = formatar_valor_por_extenso(aluguel_valor)
-            texto = f"Recebemos de {operacao} {pessoa_dados[1]}, CPF/CNPJ: {pessoa_dados[3]}, Residente na {pessoa_dados[8]}, {pessoa_dados[9]}, {pessoa_dados[10]}, {pessoa_dados[11]}. O VALOR de: R$ {pessoa_dados[12]}({aluguel_por_extenso}), REFERENTE: {pessoa_dados[22]}."
+                    
+                    # fecha todo o codigo
+                    #sys.exit()  # Interrompe a execução do programa imediatamente
+
+            except ValueError:
+                valor_liquido = 0.00  # Define o valor como 0 caso haja erro na conversão
+
+            aluguel_por_extenso = formatar_valor_por_extenso(valor_liquido)  # Utilize valor_liquido aqui
+            texto = f"RECEBEMOS DE: {pessoa_dados[1]}, CPF/CNPJ: {pessoa_dados[3]}, Residente na {pessoa_dados[8]}, {pessoa_dados[9]}, {pessoa_dados[10]}, {pessoa_dados[11]}. O VALOR de: R$ {pessoa_dados[12]}({aluguel_por_extenso}), REFERENTE: {pessoa_dados[22]}."
 
             largura_maxima = 450
             palavras = texto.split(" ")
@@ -1775,12 +2136,14 @@ def gerar_pdf(cliente):  # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE,
 
             return y_position
 
+
+
         # Ajuste da posição inicial de Y para a primeira via
         y_position_inicial = 725
         desenhar_logo(c, y_position_inicial)  # Logo na primeira via
         y_position = desenhar_dados_empresa(c, y_position_inicial, id_recibo)  # Dados da empresa na primeira via
         y_position -= 10
-        desenhar_pessoa(c, y_position, id_recibo, "Aluguel", cliente)  # Primeira via
+        desenhar_pessoa(c, y_position, id_recibo, ":", cliente)  # Primeira via
 
         # Desenhar o retângulo ao redor da primeira via (sem alterar layout)
         c.setStrokeColorRGB(0, 0, 0)  # Cor da borda (preto)
@@ -1791,7 +2154,7 @@ def gerar_pdf(cliente):  # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE,
         desenhar_logo(c, y_position_inicial)  # Logo na segunda via
         y_position = desenhar_dados_empresa(c, y_position_inicial, id_recibo)  # Dados da empresa na segunda via
         y_position -= 10
-        desenhar_pessoa(c, y_position, id_recibo, "Aluguel", cliente)  # Segunda via
+        desenhar_pessoa(c, y_position, id_recibo, ":", cliente)  # Segunda via
 
         # Desenhar o retângulo
         c.rect(20, 390, 570, 400, stroke=1, fill=0)  # Ajuste o valor de Y (200) para subir
@@ -1802,7 +2165,7 @@ def gerar_pdf(cliente):  # GERAR O RECIBO ENCIMA DO PROPRIO CADASTRO DO CLIENTE,
         # Salvar o PDF
         c.save()
 
-        messagebox.showinfo("PDF Gerado", f"Recibo Nº {id_recibo} para {nome}, Gerado com Sucesso!")
+        messagebox.showinfo("PDF Gerado", f"Recibo Nº: {id_recibo} para {nome}, Gerado com Sucesso!")
         os.startfile(pdf_filename)
 
     except Exception as e:
@@ -1847,15 +2210,73 @@ def abrir_janela_consulta_clientes():
     cols = ("Codigo", "Nome", "Fantasia", "CPFCNPJ", "Telefone", "Celular", "CONTATO", "E-mail", "Endereco", "Nº", "Bairro", "Cidade", "VLR_RECIBO", "ALUGUEL", "AGUA", "LUZ", "CONDOMINIO", "IPTU", "INTERNET", "LIMPEZA", "OUTROS", "Descontos", "REF")
     tree = ttk.Treeview(janela_consulta, columns=cols, show="headings")
     
-    larguras = [15, 130, 60, 75, 80, 60, 30, 80, 150, 25, 55, 100, 70, 40, 38, 40, 40, 40, 40, 40, 40, 40, 40]
+    larguras = [50, 130, 50, 75, 80, 50, 30, 50, 150, 25, 55, 100, 75, 65, 38, 40, 40, 40, 40, 40, 40, 40, 40]
     for col, largura in zip(cols, larguras):
         tree.heading(col, text=col)
         tree.column(col, anchor="w", width=largura)
 
     tree.tag_configure("blue", background="#D0E0FF")  # Cor azul claro
     tree.tag_configure("gray", background="#F0F0F0")  # Cor cinza claro  
-    
+
     tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+    try:
+        # Conectar ao banco de dados MySQL
+        conexao = conectar_mysql()
+        cursor = conexao.cursor()  # Definir apenas o cursor
+
+        # Consultar dados dos clientes
+        cursor.execute("""
+        SELECT id, nome, fantasia, cpfcnpj, telefone1, telefone2, contato, email, endereco, numero, bairro, cidade, valor_liquido, aluguel, agua, luz, condominio, iptu, internet, limpeza, outros, descontos, referente
+        FROM pessoas
+        ORDER BY id DESC
+        """)
+
+        clientes = cursor.fetchall()
+
+        # Percorrer todos os clientes e verificar se os campos de valores são 'None' ou None
+        for i, cliente in enumerate(clientes):
+            cliente = list(cliente)  # Transformar tupla em lista
+            
+            # Verificar e substituir valores nos campos de interesse (campos financeiros)
+            campos_valores = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21]  # Índices dos campos financeiros
+
+            # Para cada campo de valor
+            for idx in campos_valores:
+                if cliente[idx] is None or cliente[idx] == 'None':  # Verifica se o valor é NULL (None) ou 'None' (como string)
+                    cliente[idx] = 0.00  # Substitui o valor por 0.00
+                else:
+                    cliente[idx] = format(cliente[idx], '.2f')  # Formatar para 2 casas decimais
+
+            # Atualizar a lista de clientes com os valores modificados
+            clientes[i] = tuple(cliente)  
+
+        # Substituir valores NULL ou None por string vazia
+        for i, cliente in enumerate(clientes):
+            cliente = list(cliente)  # Transformar tupla em lista
+
+            # Percorrer todos os campos e substituir None ou NULL por uma string vazia
+            for idx in range(len(cliente)):
+                if cliente[idx] is None or cliente[idx] == 'None':  # Verifica se é NULL ou 'None'
+                    cliente[idx] = ""  # Substitui NULL ou 'None' por uma string vazia
+
+            clientes[i] = tuple(cliente)  # Volta para tupla
+
+        # Preencher a Treeview com os dados
+        for i, cliente in enumerate(clientes):
+            item_id = tree.insert("", tk.END, values=cliente)
+            
+            # Alternando entre tags "blue" e "gray"
+            if i % 2 == 0:
+                tree.item(item_id, tags=("blue",))  # Linha azul
+            else:
+                tree.item(item_id, tags=("gray",))  # Linha cinza
+
+        conexao.close()
+
+    except mysql.connector.Error as err:
+        messagebox.showerror("Erro", f"Erro ao Consultar os Clientes: {err}")
+
       
 
     # Adicionar um menu de contexto (botão direito do mouse)
@@ -1863,7 +2284,7 @@ def abrir_janela_consulta_clientes():
         item = tree.identify('item', event.x, event.y)  # Identifica o item sob o cursor
         if item:
             menu = tk.Menu(janela_consulta, tearoff=0)
-            menu.add_command(label="Gerar Recibo", command=lambda: gerar_recibo_cliente(item))  # Adiciona opção de gerar recibo
+            menu.add_command(label="Gerar Impressão Recibo", command=lambda: gerar_recibo_cliente(item))  # Adiciona opção de gerar recibo
             menu.post(event.x_root, event.y_root)
 
     tree.bind("<Button-3>", exibir_menu)  # Bind para o botão direito
@@ -1881,14 +2302,8 @@ def abrir_janela_consulta_clientes():
             tree.delete(item)
 
         try:
-            # Conectar ao banco de dados MySQL
+        # Conectar ao banco de dados MySQL
             conexao = conectar_mysql()
-            c = conexao.cursor()
-
-            conn = conexao = conectar_mysql()
-
-            c = conexao.cursor()
-
             cursor = conexao.cursor()
 
             if nome_cliente:
@@ -1907,28 +2322,71 @@ def abrir_janela_consulta_clientes():
 
             clientes = cursor.fetchall()
 
-            # Preencher a Treeview com os dados
-             # Preencher a Treeview com os dados e alternar as cores das linhas
+        # Percorrer todos os clientes e verificar se os campos de valores são 'None' ou None
+            for i, cliente in enumerate(clientes):
+                cliente = list(cliente)  # Transformar tupla em lista
+            
+            # Verificar e substituir valores nos campos de interesse (campos financeiros)
+                campos_valores = [12, 13, 14, 15, 16, 17, 18, 19, 20, 21]  # Índices dos campos financeiros
+
+            # Para cada campo de valor
+                for idx in campos_valores:
+                    if cliente[idx] is None or cliente[idx] == 'None':  # Verifica se o valor é NULL (None) ou 'None' (como string)
+                        cliente[idx] = ""  # Substitui o valor NULL ou 'None' por string vazia
+                    else:
+                        cliente[idx] = format(cliente[idx], '.2f')  # Formatar para 2 casas decimais
+
+            # Atualizar a lista de clientes com os valores modificados
+                clientes[i] = tuple(cliente)  # Voltar a lista para tupla
+
+        # Substituir valores NULL ou None por string vazia (geral para todos os campos)
+            for i, cliente in enumerate(clientes):
+                cliente = list(cliente)  # Transformar tupla em lista
+
+            # Percorrer todos os campos e substituir None ou NULL por uma string vazia
+                for idx in range(len(cliente)):
+                    if cliente[idx] is None or cliente[idx] == 'None':  # Verifica se o valor é NULL ou 'None'
+                        cliente[idx] = ""  # Substitui NULL ou 'None' por uma string vazia
+
+                clientes[i] = tuple(cliente)  # Volta para tupla
+
+        # Preencher a Treeview com os dados
             for i, cliente in enumerate(clientes):
                 item_id = tree.insert("", tk.END, values=cliente)
-                
-                # Alternando entre tags "blue" e "gray"
+            
+            # Alternando entre tags "blue" e "gray"
                 if i % 2 == 0:
                     tree.item(item_id, tags=("blue",))  # Linha azul
                 else:
                     tree.item(item_id, tags=("gray",))  # Linha cinza
 
-            conn.close()
+            conexao.close()
 
         except mysql.connector.Error as err:
             messagebox.showerror("Erro", f"Erro ao Consultar os Clientes: {err}")
+
+
+        # Preencher a Treeview com os dados
+            for i, cliente in enumerate(clientes):
+                item_id = tree.insert("", tk.END, values=cliente)
+            
+            # Alternando entre tags "blue" e "gray"
+                if i % 2 == 0:
+                    tree.item(item_id, tags=("blue",))  # Linha azul
+                else:
+                    tree.item(item_id, tags=("gray",))  # Linha cinza
+
+            conexao.close()
+
+        except mysql.connector.Error as err:
+            messagebox.showerror("Erro", f"Erro ao Consultar os Clientes: {err}")
+
 
 # GERAR RECIBO ENCIMA DO CLIENTE ACIMA
 
 ############################################################################
 ######################################## EDITAR CLIENTE################   
-    # Função de editar cliente
-   
+    # Função de editar cliente   
     def editar_cliente():
         item = tree.selection()  # Pega o item selecionado na Treeview
         if item:
@@ -1936,13 +2394,13 @@ def abrir_janela_consulta_clientes():
             id_cliente = cliente[0]  # O ID do cliente está na primeira coluna
             print(f"Editando o Cliente com ID: {id_cliente}")
 
-        # Criar a janela de edição
+    # Criar a janela de edição
             janela_edicao_cliente = tk.Toplevel()
             janela_edicao_cliente.title(f"Edição de Cliente {id_cliente}")
-            janela_edicao_cliente.geometry("500x650+5+5")
+            janela_edicao_cliente.geometry("500x655+5+5")
             janela_edicao_cliente.resizable(False, False)
 
-        # Criando as labels (descrições) e campos de edição
+    # Criando as labels (descrições) e campos de edição
             labels = [
             "Id", "NOME", "Fantasia", "CPF/CNPJ", "Telefone", "Celular", "Contato", "e-mail", "Endereço", 
             "N°", "Bairro", "Cidade", "VALOR_RECIBO", "ALUGUEL", "Agua", "Luz", "Condomínio", "IPTU", 
@@ -1951,128 +2409,150 @@ def abrir_janela_consulta_clientes():
 
             entradas = []  # Lista para armazenar as entradas criadas
 
-        # Criando os campos de entrada
+    # Criando os campos de entrada
             for i, label_text in enumerate(labels[1:]):  # Ignora o primeiro campo (Id)
                 label = tk.Label(janela_edicao_cliente, text=f"{label_text}:")
                 label.grid(row=i, column=0, padx=10, pady=3, sticky="e")
 
                 entry = tk.Entry(janela_edicao_cliente, width=50)
-                if label_text == "VALOR_RECIBO":  # Se for o campo 'VALOR_RECIBO', deixamos ele desabilitado.
-                    entry.config(state="readonly")
-                entry.grid(row=i, column=1, padx=10, pady=3)
-                entradas.append(entry)  # Adiciona a entrada à lista
 
-        # Limpar os campos antes de preencher com dados
+        # Aplica a cor de fundo azul e ajusta a largura apenas para os campos de valores
+                campos_de_valor = ["ALUGUEL", "Agua", "Luz", "Condomínio", "IPTU", "Internet", "limpeza", "OUTROS", "Descontos"]
+                if label_text in campos_de_valor:
+                    entry.config(bg="LightBlue", fg="red", width=15)  # Cor de fundo azul, texto branco, largura 15
+
+                if label_text == "VALOR_RECIBO":  # Se for o campo 'VALOR_RECIBO', deixamos ele desabilitado.
+                     entry.config(state="readonly")                   
+                                       
+                entry.grid(row=i, column=1, padx=10, pady=3)
+                entradas.append(entry)
+    # Limpar os campos antes de preencher com dados
             for entry in entradas:
                 entry.delete(0, tk.END)  # Limpa os campos de entrada antes de preencher
 
-        # Preenchendo as entradas com os valores do cliente
+    # Preenchendo as entradas com os valores do cliente
             idx_cliente = 1  # Índice inicial do cliente após o 'Id' e 'Data' removida
             for i, entry in enumerate(entradas):
                 try:
                     valor = cliente[idx_cliente]  # Preenche com os dados correspondentes
 
-                # Se o valor for None, substitua por uma string vazia
+            # Se o valor for None, substitua por uma string vazia
                     if valor is None or valor == "None" or valor == "ONE":
                         valor = ""  # Deixa o campo vazio se o valor for None ou "ONE"
 
                     print(f"Preenchendo campo {labels[i + 1]} com valor: {valor}")  # Debugging
-                    entry.insert(0, valor)  # Preenche com os dados correspondentes
+                
+                # Garantir que os valores numéricos tenham 2 casas decimais
+                    if isinstance(valor, (int, float)):
+                        valor = f"{valor:.2f}"  # Formata para 2 casas decimais
 
+                    entry.insert(0, valor)  # Preenche com os dados correspondentes
                     idx_cliente += 1
                 except IndexError:
                     entry.insert(0, "")  # Se não encontrar dados, insira vazio
 
-        # Adicionar o campo VALOR_LIQUIDO, que é calculado a partir dos outros valores
-            valor_liquido_label = tk.Label(janela_edicao_cliente, text="VALOR PAGO ATUALIZADO:")
+    # Adicionar o campo VALOR_LIQUIDO, que é calculado a partir dos outros valores
+            valor_liquido_label = tk.Label(janela_edicao_cliente, text="VALOR RECEBIO ATUALIZADO:")
             valor_liquido_label.grid(row=len(labels) - 1, column=0, padx=10, pady=1, sticky="e")
 
             valor_liquido_value = tk.Label(janela_edicao_cliente, text="0.00")  # Inicializa com 0.00
             valor_liquido_value.grid(row=len(labels) - 1, column=1, padx=10, pady=2)
 
-        # Função para calcular o valor líquido e atualizar o Label de VALOR_LIQUIDO
-            def calcular_valor_liquido():
-                aluguel = float(entradas[12].get() or 0)
-                agua = float(entradas[13].get() or 0)
-                luz = float(entradas[14].get() or 0)
-                condominio = float(entradas[15].get() or 0)
-                iptu = float(entradas[16].get() or 0)
-                internet = float(entradas[17].get() or 0)
-                limpeza = float(entradas[18].get() or 0)
-                outros = float(entradas[19].get() or 0)
-                descontos = float(entradas[20].get() or 0)
+        
 
-            # Fórmula para calcular o valor líquido
-                valor_liquido = (aluguel + agua + luz + iptu + condominio + internet + limpeza + outros) - descontos
-                valor_liquido_value.config(text=f"{valor_liquido:.2f}")  # Atualiza o valor no Label
+    # Função para calcular o valor líquido e atualizar o Label de VALOR_LIQUIDO
+        def calcular_valor_liquido():
+            aluguel = float(entradas[12].get() or 0)
+            agua = float(entradas[13].get() or 0)
+            luz = float(entradas[14].get() or 0)
+            condominio = float(entradas[15].get() or 0)
+            iptu = float(entradas[16].get() or 0)
+            internet = float(entradas[17].get() or 0)
+            limpeza = float(entradas[18].get() or 0)
+            outros = float(entradas[19].get() or 0)
+            descontos = float(entradas[20].get() or 0)
 
-        # Calcular o valor líquido sempre que qualquer campo relevante for alterado
-            for i in range(12, 21):
-                entradas[i].bind("<FocusOut>", lambda event: calcular_valor_liquido())
+    # Fórmula para calcular o valor líquido
+            valor_liquido = (aluguel + agua + luz + iptu + condominio + internet + limpeza + outros) - descontos
+            valor_liquido_value.config(text=f"{valor_liquido:.2f}")  # Atualiza o valor no Label
 
-        # Função para salvar a edição
-            def salvar_edicao():
-                try:
-                    conexao = conectar_mysql()
-                    c = conexao.cursor()
+    # Calcular o valor líquido sempre que qualquer campo relevante for alterado
+        for i in range(12, 21):
+            entradas[i].bind("<FocusOut>", lambda event: calcular_valor_liquido())
 
-                    conn = conexao = conectar_mysql()
+# FUNÇÃO QUE SALVA A EDIÇÃO DO CADASTRO DO CLIENTE
 
-                    c = conexao.cursor()
+    # Função para salvar a edição
+        def salvar_edicao():
+            try:
+                conexao = conectar_mysql()
+                c = conexao.cursor()
 
-                    cursor = conexao.cursor()
-                    cursor = conn.cursor()
+                conn = conexao = conectar_mysql()
 
-                # Recuperar os valores das entradas
-                    valores = [entry.get() for entry in entradas]
+                c = conexao.cursor()
 
-                # Ajustar os campos numéricos (como 'descontos', 'aluguel', 'valor_liquido', etc)
-                    for i in range(len(valores)):
-                        if valores[i] == "" or valores[i] is None:
-                            valores[i] = None  # Deixa como NULL se vazio
-                        else:
-                        # Verificar se o valor é numérico antes de tentar a conversão
-                            try:
-                                if isinstance(valores[i], str) and valores[i].replace(",", "", 1).replace(".", "").isdigit():
-                                    valores[i] = valores[i].replace(",", ".")  # Garante que a vírgula seja tratada como ponto decimal
-                                    valores[i] = float(valores[i])  # Converte para float
-                            except ValueError:
-                                valores[i] = 0.00  # Se falhar, coloca 0.00 no campo numérico
+                cursor = conexao.cursor()
+                cursor = conn.cursor()
 
-                # Atualiza o valor líquido com o valor calculado
-                    valor_liquido = float(valor_liquido_value.cget("text"))
-                    valores[11] = valor_liquido  # Atualiza o valor_liquido na lista de valores
+            # Recuperar os valores das entradas
+                valores = [entry.get() for entry in entradas]
 
-                    valores.append(id_cliente)  # Adiciona o id_cliente no final da tupla
+            # Ajustar os campos numéricos (como 'descontos', 'aluguel', 'valor_liquido', etc)
+                for i in range(len(valores)):
+                    if valores[i] == "" or valores[i] is None:
+                        valores[i] = None  # Deixa como NULL se vazio
+                    else:
+                    # Verificar se o valor é numérico antes de tentar a conversão
+                        try:
+                            if isinstance(valores[i], str) and valores[i].replace(",", "", 1).replace(".", "").isdigit():
+                                valores[i] = valores[i].replace(",", ".")  # Garante que a vírgula seja tratada como ponto decimal
+                                valores[i] = float(valores[i])  # Converte para float
+                        except ValueError:
+                            valores[i] = 0.00  # Se falhar, coloca 0.00 no campo numérico
 
-                # Verificar se o número de valores corresponde ao número de parâmetros na consulta SQL
-                    expected_length = 23  # São 22 campos a serem atualizados
-                    if len(valores) != expected_length:
-                        messagebox.showerror("Erro", f"Erro: número incorreto de parâmetros. Esperado {expected_length}, mas encontrado {len(valores)}.")
-                        return  # Não prosseguir se o número de parâmetros não estiver correto
+            # Atualiza o valor líquido com o valor calculado
+                valor_liquido = float(valor_liquido_value.cget("text"))
+                valores[11] = valor_liquido  # Atualiza o valor_liquido na lista de valores
 
-                # Criando a consulta SQL
-                    sql = """
-                    UPDATE pessoas SET 
-                        nome = %s, fantasia = %s, cpfcnpj = %s, telefone1 = %s, telefone2 = %s, contato = %s, email = %s, endereco = %s, numero = %s,
-                        bairro = %s, cidade = %s, valor_liquido = %s, aluguel = %s, agua = %s, luz = %s, condominio = %s, iptu = %s, internet = %s, limpeza = %s, 
-                        outros = %s, descontos = %s, referente = %s
-                    WHERE id = %s
-                    """
+                valores.append(id_cliente)  # Adiciona o id_cliente no final da tupla
 
-                    cursor.execute(sql, tuple(valores))  # Passa os valores para o SQL
-                    conn.commit()
+            # Verificar se o número de valores corresponde ao número de parâmetros na consulta SQL
+                expected_length = 23  # São 22 campos a serem atualizados
+                if len(valores) != expected_length:
+                    messagebox.showerror("Erro", f"Erro: número incorreto de parâmetros. Esperado {expected_length}, mas encontrado {len(valores)}.")
+                    return  # Não prosseguir se o número de parâmetros não estiver correto
 
-                    messagebox.showinfo("Sucesso", f"Cliente {id_cliente} Atualizado com Sucesso!")
-                    conn.close()
-                    janela_edicao_cliente.destroy()
+            # Criando a consulta SQL
+                sql = """
+                UPDATE pessoas SET 
+                    nome = %s, fantasia = %s, cpfcnpj = %s, telefone1 = %s, telefone2 = %s, contato = %s, email = %s, endereco = %s, numero = %s,
+                    bairro = %s, cidade = %s, valor_liquido = %s, aluguel = %s, agua = %s, luz = %s, condominio = %s, iptu = %s, internet = %s, limpeza = %s, 
+                    outros = %s, descontos = %s, referente = %s
+                WHERE id = %s
+                """
+                ########
+                c.execute(sql, tuple(valores))  # Passa os valores para o SQL
+                conexao.commit()
 
-                except mysql.connector.Error as err:
-                    print(f"Erro ao salvar: {err}")  # Exibir o erro específico no console
-                    messagebox.showerror("Erro", f"Erro ao salvar a edição: {err}")
+                messagebox.showinfo("Sucesso", f"Cliente {id_cliente} Atualizado com Sucesso!")
 
+            # Atualizar a árvore (Grid)
+                for item in tree.get_children():
+                    if tree.item(item, "values")[0] == str(id_cliente):
+                # Atualiza os dados desse item na árvore com os novos valores
+                        tree.item(item, values=(id_cliente,) + tuple(valores[:-1]))  # Atualiza com os dados editados (sem o id_cliente)
 
-   
+                conexao.close()
+                janela_edicao_cliente.destroy()
+
+            except mysql.connector.Error as err:
+                print(f"Erro ao salvar: {err}")  # Exibir o erro específico no console
+                messagebox.showerror("Erro", f"Erro ao salvar a edição: {err}")
+
+                                     
+                                     
+                  
 ######### BOTOES JANELA EDITAR CLIENTES
     # Botão Salvar com cor verde e texto branco
         btn_salvar = tk.Button(janela_edicao_cliente, text=" Salvar   (Enter)     ) ...)", command=salvar_edicao, bg="green", fg="white")
@@ -2106,11 +2586,14 @@ def abrir_janela_consulta_clientes():
         janela_consulta.after(100, lambda: janela_consulta.lift())
 
 # Botões para a Janela de Consulta de Clientes
+
+    btn_editar = tk.Button(janela_consulta, text="ATUALIZAR VALORES", command=editar_cliente, bg="blue", fg="white")
+    btn_editar.pack(padx=10, pady=10)
+
     btn_incluir_cliente = tk.Button(janela_consulta, text="INCLUIR", command=abrir_janela_inclusao_cliente, bg="green", fg="white")
     btn_incluir_cliente.pack(padx=10, pady=10)
    
-    btn_editar = tk.Button(janela_consulta, text="EDITAR", command=editar_cliente, bg="blue", fg="white")
-    btn_editar.pack(padx=10, pady=10)
+    
 
     btn_fechar = tk.Button(janela_consulta, text="Fechar Sistema", 
                        command=lambda: [janela_consulta.destroy(), janela_principal.destroy()], 
@@ -2209,7 +2692,7 @@ def gerar_mes():
 
 
 
-############################################### GERAR RECIBO PADRAO 2 VIAS - LOGO - SELECIONAR - COM DATA DE CRIACAO
+############################################### GERAR RECIBO PADRAO 2 VIAS
    
 from decimal import Decimal, InvalidOperation
 from num2words import num2words
@@ -2240,7 +2723,7 @@ def desenhar_logo(c, y_position):
 def desenhar_dados_empresa(c, y_position, id_recibo):
     x_position_empresa = 180  # Definido para começar um pouco à direita do logo (ajustável conforme necessário)
     c.setFont("Helvetica", 14)
-    c.drawString(x_position_empresa, y_position, f"IMOBILIÁRIA LIDER   10.605.092/0001-97                         RECIBO N°{id_recibo}")
+    c.drawString(x_position_empresa, y_position, f"IMOBILIÁRIA LIDER   10.605.092/0001-97                       RECIBO N°:{id_recibo}")
     y_position -= 12
     c.drawString(x_position_empresa, y_position, "marcelobeutler@gmail.com | (55) 9 8116 - 9772")
     y_position -= 12
@@ -2420,11 +2903,11 @@ def gerar_recibo_padrao():  # SELECIONA O ID_RECIBO E PREVISUALIZA O RECIBO PADR
             return y_position  # Retorna a posição Y atualizada
 
         # Ajustar a posição inicial de Y para a primeira via
-        y_position_inicial = 710
+        y_position_inicial = 720
 
         # Desenhar as duas vias na mesma página, ajustando a posição Y
         y_position = desenhar_recibo(y_position_inicial)  # Primeira via
-        y_position -= 80  # Ajuste o valor para mover a segunda via para baixo
+        y_position -= 95  # Ajuste o valor para mover a segunda via para baixo
 
         y_position -= 50  # Ajuste maior se necessário
 
@@ -2783,7 +3266,7 @@ conexao = conectar_mysql()
 # Função para criar a janela principal
 def criar_janela_principal():
     janela_boas = ctk.CTk()
-    janela_boas.title("Tela de Boas Vinda - A GDI")
+    janela_boas.title("Tela de Boas Vinda - A GDI Informática")
     janela_boas.geometry("730x280")
     janela_boas.resizable(False, False)
 
@@ -2963,7 +3446,9 @@ menu_relatorios.add_command(label="Relatório DADOS dos Clientes", command=rel_C
 
 # Menu Opcoes
 menu_preferencias = tk.Menu(menu_bar, tearoff=0)
-menu_preferencias.add_command(label="Opcoes do Sistema", command=opcoes_sistema)
+menu_preferencias.add_command(label="Dados da Empresa", command=editar_dados_empresa_com_campos)
+menu_preferencias.add_separator()
+menu_preferencias.add_command(label="Informações", command=opcoes_sitema)
 
 
 # Menu Sair
@@ -2976,7 +3461,7 @@ menu_ajuda.add_command(label="Sair", command=lambda: fechar_janela(janela_princi
 
 
 # Adicionando os submenus ao menu principal
-menu_bar.add_cascade(label="CADASTRO", menu=menu_Cadastro)
+menu_bar.add_cascade(label="CLIENTES", menu=menu_Cadastro)
 menu_bar.add_cascade(label="RELATORIOS", menu=menu_relatorios)
 menu_bar.add_cascade(label="Preferencias", menu=menu_preferencias)
 menu_bar.add_cascade(label="Ajuda", menu=menu_ajuda)  # Aqui adiciona o menu "Sair"
@@ -3025,11 +3510,11 @@ btn_fechar = tk.Button(janela_principal, text="Fechar", command=janela_principal
 btn_fechar.grid(row=2, column=3, padx=10, pady=10)
 
 # Criando a árvore (grid de dados) da TELA PRINCIPAL DE CONSULTA DOS RECIBOS
-cols = ("N° RECIBO", "NOME", "Cpf/Cnpj", "Endereco", "ALUGUEL", "VLR_PAGO", "REFERENTE", "DATA", "Agua", "Luz", "Condomínio", "IPTU", "Internet", "Limpeza", "OUTROS", "DESCONTO", "OBS")
+cols = ("NUMERO", "NOME", "Cpf/Cnpj", "Endereco", "ALUGUEL", "VLR_PAGO", "REFERENTE", "DATA", "Agua", "Luz", "Condomínio", "IPTU", "Internet", "Limpeza", "OUTROS", "DESCONTO", "OBS")
 tree = ttk.Treeview(janela_principal, columns=cols, show="headings")
 
-# Definindo larguras
-larguras = [18, 125, 45, 150, 30, 40, 80, 35, 20, 20, 20, 20, 20, 21, 23, 24, 25]
+# Definindo larguras DA TELA CONSULTA RECIBOS
+larguras = [28, 125, 45, 150, 30, 40, 80, 35, 20, 20, 20, 20, 20, 21, 23, 24, 25]
 
 for col, largura in zip(cols, larguras):
     tree.heading(col, text=col)
