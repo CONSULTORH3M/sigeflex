@@ -1612,7 +1612,7 @@ def fechar_janela(janela):
 def abrir_janela_inclusao_cliente(): # JANELA SECUNDARIA DE CONSULTA DE CLIENTES
     janela_inclusao = tk.Toplevel(janela_principal)
     janela_inclusao.title("Cadastro de Cliente")
-    janela_inclusao.geometry("580x745+5+5")  # Aumentar a altura para caber mais campos
+    janela_inclusao.geometry("580x750+5+5")  # Aumentar a altura para caber mais campos
     janela_inclusao.resizable(False, False)
     janela_inclusao.iconbitmap("icon.ico")
 
@@ -2397,7 +2397,7 @@ def abrir_janela_consulta_clientes():
     # Criar a janela de edição
             janela_edicao_cliente = tk.Toplevel()
             janela_edicao_cliente.title(f"Edição de Cliente {id_cliente}")
-            janela_edicao_cliente.geometry("500x655+5+5")
+            janela_edicao_cliente.geometry("510x650+5+5")
             janela_edicao_cliente.resizable(False, False)
 
     # Criando as labels (descrições) e campos de edição
@@ -2587,9 +2587,10 @@ def abrir_janela_consulta_clientes():
 
 # Botões para a Janela de Consulta de Clientes
 
+
     btn_editar = tk.Button(janela_consulta, text="ATUALIZAR VALORES", command=editar_cliente, bg="blue", fg="white")
     btn_editar.pack(padx=10, pady=10)
-
+    
     btn_incluir_cliente = tk.Button(janela_consulta, text="INCLUIR", command=abrir_janela_inclusao_cliente, bg="green", fg="white")
     btn_incluir_cliente.pack(padx=10, pady=10)
    
