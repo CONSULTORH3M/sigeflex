@@ -16,6 +16,12 @@ def inicializar_tabela():
         if conexao.is_connected():
             cursor = conexao.cursor()
 
+# CRIANDO TABELA PARAMETROS
+# CREATE TABLE parametros (
+#     id INT PRIMARY KEY,          -- A coluna 'id' será a chave primária
+#     contador INT DEFAULT 1       -- A coluna 'contador' terá o valor padrão 1
+# );
+
 
 # CRIANDO TABELA USUARIOS
 #### CRIANDO TABELAS USUARIOS           
@@ -31,41 +37,41 @@ def inicializar_tabela():
             
 # CRIANDO TABGELAS PESSOAS           
 ####################################################### CRIANDO TABELAS PESSOAS 
-            cursor.execute('''                         
-                CREATE TABLE IF NOT EXISTS pessoas (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    tipoPessoa char(1) NULL,
-                    nome VARCHAR(60) NOT NULL,
-                    fantasia VARCHAR(60) NOT NULL,
-                    cpfcnpj VARCHAR(18) NULL,
-                    ie VARCHAR(18) NULL,
-                    telefone1 VARCHAR(50) NULL, 
-                    telefone2 VARCHAR(50) NULL,                                
-                    contato VARCHAR(50) NULL,
-                    email VARCHAR(100) NULL,
-                    endereco VARCHAR(60) NULL,
-                    numero VARCHAR(20) NULL,
-                    complemento VARCHAR(20) NULL,       
-                    bairro VARCHAR(60) NULL,
-                    cidade VARCHAR(60) NULL,
-                    data date NULL,                                                          
-                    aluguel DECIMAL(10, 2) NULL,
-                    valor_liquido DECIMAL(10, 2) NULL,
-                    `agua` DECIMAL(10, 2) NULL,
-                    `luz` DECIMAL(10, 2) NULL,
-                    condominio DECIMAL(10, 2) NULL,
-                    iptu DECIMAL(10, 2) NULL,
-                    internet DECIMAL(10, 2) NULL,
-                    limpeza DECIMAL(10, 2) NULL,
-                    outros DECIMAL(10, 2) NULL,
-                    descontos DECIMAL(10, 2) NULL,
-                    referente VARCHAR(60) NULL,
-                    observacao VARCHAR(60) NULL,
-                    formaPag VARCHAR(50) NULL,
-                    situacao TINYINT(1) NULL
+            # cursor.execute('''                         
+            #     CREATE TABLE IF NOT EXISTS pessoas (
+            #         id INT AUTO_INCREMENT PRIMARY KEY,
+            #         tipoPessoa char(1) NULL,
+            #         nome VARCHAR(60) NOT NULL,
+            #         fantasia VARCHAR(60) NOT NULL,
+            #         cpfcnpj VARCHAR(18) NULL,
+            #         ie VARCHAR(18) NULL,
+            #         telefone1 VARCHAR(50) NULL, 
+            #         telefone2 VARCHAR(50) NULL,                                
+            #         contato VARCHAR(50) NULL,
+            #         email VARCHAR(100) NULL,
+            #         endereco VARCHAR(60) NULL,
+            #         numero VARCHAR(20) NULL,
+            #         complemento VARCHAR(20) NULL,       
+            #         bairro VARCHAR(60) NULL,
+            #         cidade VARCHAR(60) NULL,
+            #         data date NULL,                                                          
+            #         aluguel DECIMAL(10, 2) NULL,
+            #         valor_liquido DECIMAL(10, 2) NULL,
+            #         `agua` DECIMAL(10, 2) NULL,
+            #         `luz` DECIMAL(10, 2) NULL,
+            #         condominio DECIMAL(10, 2) NULL,
+            #         iptu DECIMAL(10, 2) NULL,
+            #         internet DECIMAL(10, 2) NULL,
+            #         limpeza DECIMAL(10, 2) NULL,
+            #         outros DECIMAL(10, 2) NULL,
+            #         descontos DECIMAL(10, 2) NULL,
+            #         referente VARCHAR(60) NULL,
+            #         observacao VARCHAR(60) NULL,
+            #         formaPag VARCHAR(50) NULL,
+            #         situacao TINYINT(1) NULL
                            
-                    )
-                ''')
+            #         )
+            #     ''')
                      
 
 
@@ -74,30 +80,30 @@ def inicializar_tabela():
 ############################## CRIANDO TABELAS RECIBOS
            
                
-            # cursor.execute('''
-            #     CREATE TABLE IF NOT EXISTS recibos (
-            #         id_recibo INT AUTO_INCREMENT PRIMARY KEY,
-            #         nome VARCHAR(255) NOT NULL,
-            #         cpfcnpj VARCHAR(20) NULL,
-            #         endereco VARCHAR(255) NULL,
-            #         aluguel DECIMAL(10, 2) NULL,
-            #         valor_liquido DECIMAL(10, 2) NULL, 
-            #         referente VARCHAR(255) NULL,                                
-            #         dataEmissao DATE NULL,
-            #         agua DECIMAL(10, 2) NULL,
-            #         luz DECIMAL(10, 2) NULL,
-            #         condominio DECIMAL(10, 2) NULL,
-            #         iptu DECIMAL(10, 2) NULL,
-            #         internet DECIMAL(10, 2) NULL,
-            #         limpeza DECIMAL(10, 2) NULL,
-            #         outros DECIMAL(10, 2) NULL,
-            #         descontos DECIMAL(10, 2) NULL,
-            #         observacao TEXT NULL,
-            #         telefone INT(11) NULL,
-            #         formaPag VARCHAR(50) NULL,
-            #         tipo VARCHAR(50) NULL
-            #    )
-            # ''')
+            cursor.execute('''
+                 CREATE TABLE IF NOT EXISTS recibos (
+                     id_recibo INT AUTO_INCREMENT PRIMARY KEY,
+                     nome VARCHAR(255) NOT NULL,
+                     cpfcnpj VARCHAR(20) NULL,
+                     endereco VARCHAR(255) NULL,
+                     aluguel DECIMAL(10, 2) NULL,
+                     valor_liquido DECIMAL(10, 2) NULL, 
+                     referente VARCHAR(255) NULL,                                
+                     dataEmissao DATE NULL,
+                     agua DECIMAL(10, 2) NULL,
+                     luz DECIMAL(10, 2) NULL,
+                     condominio DECIMAL(10, 2) NULL,
+                     iptu DECIMAL(10, 2) NULL,
+                     internet DECIMAL(10, 2) NULL,
+                     limpeza DECIMAL(10, 2) NULL,
+                     outros DECIMAL(10, 2) NULL,
+                     descontos DECIMAL(10, 2) NULL,
+                     observacao TEXT NULL,
+                     telefone INT(11) NULL,
+                     formaPag VARCHAR(50) NULL,
+                     tipo VARCHAR(50) NULL
+                )
+             ''')
 
 # FINAL DO MYSQL PARA EXECUTAR AS AÇOES NO BANCO DE DADOS
             conexao.commit()
