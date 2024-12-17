@@ -1285,13 +1285,16 @@ def salvar_dados_empresa(fantasia, nome, cnpj, telefone, email, endereco, usuari
         messagebox.showerror("Erro", f"Erro ao Salvar o Arquivo: {e}")
 
 # Função para editar os dados da empresa
+import tkinter as tk
+from tkinter import messagebox
+
 def editar_dados_empresa_com_campos():
     # Cria a janela principal
     janela_edicao = tk.Tk()
     janela_edicao.title("Dados da Empresa")
     janela_edicao.geometry("620x380")  # Ajuste no tamanho da janela
     janela_edicao.iconbitmap("icon.ico")
-
+    janela_edicao.resizable(False, False)
 
     # Lê os dados do arquivo
     dados_empresa = carregar_dados_empresa()
@@ -1374,22 +1377,37 @@ def editar_dados_empresa_com_campos():
     entry_mensagem.insert(0, mensagem)  # Preenche o campo com o valor lido
 
     # Função para salvar as informações editadas
-    salvar_button = tk.Button(janela_edicao, 
-                              text="Salvar", 
-                              command=lambda: salvar_dados_empresa(
-                                  entry_fantasia.get(),
-                                  entry_nome.get(),
-                                  entry_cnpj.get(),  
-                                  entry_telefone.get(), 
-                                  entry_email.get(), 
-                                  entry_endereco.get(),
-                                  entry_usuario.get(), 
-                                  entry_numeracao.get(),
-                                  entry_mensagem.get(), 
-                                  janela_edicao
-                              ),
-                              bg="green", fg="white")  # Cor de fundo (verde), cor da fonte (branca)
+    salvar_button = tk.Button(
+        janela_edicao, 
+        text="Salvar", 
+        command=lambda: salvar_dados_empresa(
+            entry_fantasia.get(),
+            entry_nome.get(),
+            entry_cnpj.get(),  
+            entry_telefone.get(), 
+            entry_email.get(), 
+            entry_endereco.get(),
+            usuario,  # Corrigido: usa a variável `usuario` diretamente
+            entry_numeracao.get(),
+            entry_mensagem.get(), 
+            janela_edicao
+        ),
+        bg="green", fg="white"  # Cor de fundo (verde), cor da fonte (branca)
+    )
     salvar_button.grid(row=8, column=1, pady=15, sticky="e")
+
+    # Função para fechar a janela
+    def fechar_janela():
+        janela_edicao.destroy()
+
+    # Botão Fechar
+    fechar_button = tk.Button(
+        janela_edicao,
+        text="Fechar",
+        command=fechar_janela,  # Chama a função para fechar a janela
+        bg="red", fg="white"  # Cor de fundo (vermelho), cor da fonte (branca)
+    )
+    fechar_button.grid(row=8, column=0, pady=15, sticky="w")  # Posiciona o botão ao lado do botão "Salvar"
 
     # Exibe a janela
     janela_edicao.mainloop()
